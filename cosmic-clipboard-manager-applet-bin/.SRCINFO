@@ -1,0 +1,19 @@
+pkgbase = cosmic-ext-applet-clipboard-manager-bin
+	pkgdesc = Clipboard manager for COSMIC™
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/cosmic-utils/clipboard-manager
+	arch = x86_64
+	license = GPL-3.0-only
+	source = cosmic-ext-applet-clipboard-manager
+	source = desktop_entry.desktop
+	source = app_icon.svg
+	source = env.sh
+	source = config_schema.json
+	sha256sums = f92ee35c21159778e6e50bda24267bdbf93514838fe1178049d0f910ae92ebe4
+	sha256sums = 41352862cfee698f77b749b0a7696d9c78166762d54dfcb34289b5dfe915b1b5
+	sha256sums = d8aef990c01d2af915d3bef32756fe0d0e66a880c55e05258844711a93be431c
+	sha256sums = 3a5c9651344e8ba8e5cbfc9edafcd15e23a8c26ee9796949ca748710fc3eb424
+	sha256sums = 4bb72d63b85a0b7e5a0d2310b0c94b7e74180187a0daff299aad240030a61910
+
+pkgname = cosmic-ext-applet-clipboard-manager-bin

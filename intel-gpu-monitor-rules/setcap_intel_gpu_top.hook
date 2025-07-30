@@ -1,0 +1,11 @@
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Upgrade
+Target = intel-gpu-tools
+
+[Action]
+Description = Setcap Intel Gpu Top...
+When = PostTransaction
+Exec = /usr/bin/bash -c '/usr/bin/systemctl is-active --quiet setcap_intel_gpu_top.service && /usr/bin/systemctl restart setcap_intel_gpu_top.service || /usr/bin/systemctl enable --now setcap_intel_gpu_top.service'
+NeedsTargets

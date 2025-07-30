@@ -1,0 +1,9 @@
+pkgbase = sysrq-rules
+	pkgdesc = Rule to enable all SysRq Funcitons.
+	pkgver = 1
+	pkgrel = 1
+	arch = any
+	source = 99-sysrq.conf
+	sha256sums = 67b6ebe8a8e52cd60266f418b7af77c2ef0b2b6596de494ec5c37824f355a3ae
+
+pkgname = sysrq-rules

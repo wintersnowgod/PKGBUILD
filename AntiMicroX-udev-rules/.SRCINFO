@@ -1,0 +1,12 @@
+pkgbase = antimicrox-udev-rules
+	pkgdesc = Automated udev rules for antimicrox flatpak or appimage.
+	pkgver = 1
+	pkgrel = 1
+	url = https://github.com/AntiMicroX/antimicrox
+	install = antimicrox-udev-rules.install
+	arch = any
+	license = GPL
+	source = https://raw.githubusercontent.com/AntiMicroX/antimicrox/master/other/60-antimicrox-uinput.rules
+	sha256sums = SKIP
+
+pkgname = antimicrox-udev-rules

@@ -1,0 +1,27 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=cosmic-ext-applet-clipboard-manager-bin
+pkgdesc='Clipboard manager for COSMIC™'
+pkgver=0.1.0
+pkgrel=1
+arch=(x86_64)
+url="https://github.com/cosmic-utils/clipboard-manager"
+depends=('gcc-libs' 'glibc' 'hicolor-icon-theme' 'libxkbcommon')
+license=('GPL-3.0-only')
+source=("cosmic-ext-applet-clipboard-manager"
+        "desktop_entry.desktop"
+        "app_icon.svg"
+        "env.sh"
+        "config_schema.json")
+sha256sums=('f92ee35c21159778e6e50bda24267bdbf93514838fe1178049d0f910ae92ebe4'
+            '41352862cfee698f77b749b0a7696d9c78166762d54dfcb34289b5dfe915b1b5'
+            'd8aef990c01d2af915d3bef32756fe0d0e66a880c55e05258844711a93be431c'
+            '3a5c9651344e8ba8e5cbfc9edafcd15e23a8c26ee9796949ca748710fc3eb424'
+            '4bb72d63b85a0b7e5a0d2310b0c94b7e74180187a0daff299aad240030a61910')
+
+package() {
+    install -Dm755 "${srcdir}/cosmic-ext-applet-clipboard-manager" "${pkgdir}/usr/bin/cosmic-ext-applet-clipboard-manager"
+    install -Dm755 "${srcdir}/desktop_entry.desktop" "${pkgdir}/usr/share/applications/io.github.wiiznokes.cosmic-ext-applet-clipboard-manager.desktop"
+    install -Dm644 "${srcdir}/app_icon.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/io.github.wiiznokes.cosmic-ext-applet-clipboard-manager-symbolic.svg"
+    install -Dm644 "${srcdir}/env.sh" "${pkgdir}/etc/profile.d/cosmic-ext-applet-clipboard-manager-symbolic.sh"
+    install -Dm644 "${srcdir}/config_schema.json" "${pkgdir}/usr/share/configurator/io.github.wiiznokes.cosmic-ext-applet-clipboard-manager.json"
+}

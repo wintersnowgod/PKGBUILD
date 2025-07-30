@@ -1,0 +1,40 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=torctl-gui
+pkgver=1.1.0
+pkgrel=1
+pkgdesc="A GUI frontend for torctl."
+arch=('any')
+url="https://github.com/s-n-alexeyev/torctl-gui"
+license=('GPL-3.0-only')
+depends=('torctl' 'tor' 'yad' 'macchanger' 'iproute2' 'libnotify' 'systemd')
+source=("${pkgname}-${pkgver}::https://github.com/s-n-alexeyev/torctl-gui/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  # Install the main script
+  install -Dm755 "torctl-gui" "${pkgdir}/usr/bin/torctl-gui"
+
+  # Install the icon
+  install -Dm644 "tor.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/torctl-gui.svg"
+
+  # Install license
+  install -Dm644 "LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+
+  # Install documentation
+  install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+  install -Dm644 "README-ru.md" "${pkgdir}/usr/share/doc/${pkgname}/README-ru.md"
+
+  # Create and install the .desktop file
+  install -Dm644 /dev/stdin "${pkgdir}/usr/share/applications/torctl-gui.desktop" <<EOF
+[Desktop Entry]
+Name=Torctl GUI
+Comment=A GUI frontend for Torctl
+Exec=torctl-gui
+Icon=torctl-gui
+Terminal=false
+Type=Application
+Categories=Network;Privacy;Security;
+EOF
+}

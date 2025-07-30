@@ -1,0 +1,15 @@
+pkgbase = apdatifier-dependencies
+	pkgdesc = Dependencies required for apdatifier.
+	pkgver = 1
+	pkgrel = 3
+	url = https://github.com/exequtic/apdatifier
+	arch = any
+	license = GPL
+	depends = jq
+	depends = pacman-contrib
+	depends = fzf
+	depends = tmux
+	optdepends = paru: AUR Helper
+	optdepends = yay: AUR Helper
+
+pkgname = apdatifier-dependencies

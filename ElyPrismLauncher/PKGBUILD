@@ -1,0 +1,61 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=elyprismlauncher
+pkgver=9.1
+pkgrel=1
+pkgdesc="This fork of Prism Launcher adds integrated support for Ely.by accounts (MSA accounts can still be used). This is not endorsed by Prism Launcher or Ely.by."
+arch=(x86_64)
+url='https://github.com/Octol1ttle/ElyPrismLauncher'
+license=('GPL-3.0-only AND LGPL-3.0-or-later AND LGPL-2.0-or-later AND Apache-2.0 AND MIT AND LicenseRef-Batch AND OFL-1.1')
+
+depends=(
+  glibc
+  gcc-libs
+  java-runtime
+  libgl
+  qt6-base
+  qt6-5compat
+  qt6-svg
+  qt6-imageformats
+  qt6-networkauth
+  quazip-qt6
+  zlib
+  hicolor-icon-theme
+  tomlplusplus
+  cmark
+)
+makedepends=(cmake extra-cmake-modules git jdk17-openjdk scdoc ghc-filesystem gamemode)
+optdepends=('glfw: to use system GLFW libraries'
+            'openal: to use system OpenAL libraries'
+            'visualvm: Profiling support'
+            'xorg-xrandr: for older minecraft versions'
+            'flite: minecraft voice narration')
+
+source=("https://github.com/Octol1ttle/ElyPrismLauncher/releases/download/${pkgver}/ElyPrismLauncher-${pkgver}.tar.gz")
+sha256sums=('c8a2af019b048da979a6f3897d30064cb8f30544e91a9a0e4e80d4b7e7d851e2')
+
+provides=('prismlauncher')
+conflicts=('prismlauncher')
+
+build() {
+  cd ElyPrismLauncher-${pkgver}
+
+  export PATH="/usr/lib/jvm/java-17-openjdk/bin/:$PATH"
+
+  cmake -DCMAKE_BUILD_TYPE= \
+    -DCMAKE_INSTALL_PREFIX="/usr" \
+    -DLauncher_BUILD_PLATFORM="archlinux" \
+    -DLauncher_QT_VERSION_MAJOR="6" \
+    -Bbuild -S.
+  cmake --build build
+}
+
+check() {
+  cd ElyPrismLauncher-${pkgver}/build
+  ctest .
+}
+
+package() {
+  cd ElyPrismLauncher-${pkgver}/build
+  DESTDIR="$pkgdir" cmake --install .
+}
+

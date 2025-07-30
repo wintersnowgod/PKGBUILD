@@ -1,0 +1,11 @@
+post_install() {
+  sudo systemctl enable --now setcap_intel_gpu_top.service
+}
+
+post_remove() {
+  sudo systemctl disable --now setcap_intel_gpu_top.service
+}
+
+post_upgrade() {
+  sudo systemctl restart setcap_intel_gpu_top.service
+}

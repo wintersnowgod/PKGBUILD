@@ -1,0 +1,11 @@
+[Unit]
+Description=Set intel_gpu_top perfmon capabilities
+After=graphical.target
+
+[Service]
+ExecStart=/sbin/setcap cap_perfmon=+ep /usr/bin/intel_gpu_top
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical.target

@@ -1,0 +1,12 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=sysrq-rules
+pkgver=1
+pkgrel=1
+pkgdesc="Rule to enable all SysRq Funcitons."
+arch=('any')
+source=("99-sysrq.conf")
+sha256sums=('67b6ebe8a8e52cd60266f418b7af77c2ef0b2b6596de494ec5c37824f355a3ae')
+
+package() {
+  install -Dm644 "${srcdir}/99-sysrq.conf" "${pkgdir}/etc/sysctl.d/99-sysrq.conf"
+}

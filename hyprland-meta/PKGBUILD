@@ -1,0 +1,22 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=hyprland-meta
+pkgver=0.49.0
+pkgrel=1
+pkgdesc='Meta package to install Hyprland and all related utilities'
+arch=(any)
+url='https://www.hyprland.org/'
+license=(BSD-3-Clause)
+depends=(
+  hypridle
+  hyprland
+  hyprlock
+  hyprpaper
+  hyprpicker
+  hyprpolkitagent
+  hyprsunset
+#   hyprsysteminfo
+  xdg-desktop-portal-hyprland
+  uwsm
+  kitty
+  waybar
+)

@@ -1,0 +1,24 @@
+pkgbase = looking-glass-module-dkms-setup
+	pkgdesc = Automated rules for looking-glass-module-dkms.
+	pkgver = B6
+	pkgrel = 10
+	epoch = 2
+	url = https://looking-glass.io/docs/B6/module/#kernel-module
+	install = looking-glass-module-dkms-setup.install
+	arch = x86_64
+	license = GPL
+	depends = looking-glass-module-dkms
+	backup = etc/udev/rules.d/99-kvmfr.rules
+	backup = etc/tmpfiles.d/10-looking-glass.conf
+	source = 10-looking-glass.conf
+	source = kvmfr.conf
+	source = kvmfr-modprobe.conf
+	source = 99-kvmfr.rules
+	source = libvirt-qemu
+	sha256sums = 2daadd147aeff6b5905c0057867433a1da355ca44f68f7cbe2cc8759e5c987a8
+	sha256sums = 10865542e2f3812d78b6cf2a54c055feec885a1d6749a790674b53caf40b28eb
+	sha256sums = 52316ce8844a4622907a9199aa8eafdbbb8f6938db118af5959cefb4be54f30a
+	sha256sums = 6bc9e4d61716204e26c36ec200f00285243b082b1db44f249e3c259223ea7cda
+	sha256sums = 15e99ace35b12e6513b289cb30384e348589c9f60a1b5a200ebaf210a797e955
+
+pkgname = looking-glass-module-dkms-setup

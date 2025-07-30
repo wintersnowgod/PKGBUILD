@@ -1,0 +1,19 @@
+pkgbase = lazyvim-dependencies
+	pkgdesc = Dependencies required for lazyvim.
+	pkgver = 1
+	pkgrel = 1
+	url = lazyvim.org
+	arch = any
+	license = GPL
+	depends = git
+	depends = lazygit
+	depends = curl
+	depends = fzf
+	depends = ripgrep
+	depends = fd
+	depends = gcc
+	depends = wl-clipboard
+	depends = xclip
+	optdepends = nerd-fonts: Optional, but needed.
+
+pkgname = lazyvim-dependencies

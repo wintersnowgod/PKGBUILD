@@ -1,0 +1,16 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=paccache-hook-pkg
+pkgver=1
+pkgrel=1
+pkgdesc="A Pacman hook to keep 3 latest version of pkgs."
+arch=('any')
+url=""
+license=('GPL')
+depends=('pacman-contrib')
+source=("paccache-hook-pkg.hook")
+sha256sums=('e372cc940c9896851626ba08d41ce653f9555a065ed07289d6e75440b588bdb2')
+
+package() {
+  # Install hook file
+  install -Dm644 "${srcdir}/paccache-hook-pkg.hook" "${pkgdir}/etc/pacman.d/hooks/paccache-hook-pkg.hook"
+}

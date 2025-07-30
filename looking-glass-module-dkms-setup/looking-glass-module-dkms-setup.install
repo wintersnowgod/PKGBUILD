@@ -1,0 +1,12 @@
+post_install() {
+  echo
+  echo -e "=> Please edit '/etc/udev/rules.d/99-kvmfr.rules' and '/etc/tmpfiles.d/10-looking-glass.conf' and replace user with your user name. Then restart your PC for the setting to take effect."
+  echo -e "\n=> Refer to https://looking-glass.io/docs/B6/module/#kernel-module for full guide. Read the guide thoroughly."
+  echo -e "\n=> This package installs the udev rule, loads the modules kvmfr, adds apparmor rule and has tempfile to set the permission for '/dev/kvmfr0' so you dont have to do manually. Aside from these, you need to do other setup manually from the guide."
+  echo -e "\n=> If any error about /dev/kvmfr0 arises you can try uncommenting the 'cgroup_device_acl' block in /etc/libvirt/qemu.conf, and add '/dev/kvmfr0' to the list (Do not forget the "," before adding it). Then restart libvirtd: 'sudo systemctl restart libvirtd.service'"
+  echo -e "\n=> Start looking glass by the command 'looking-glass-client -f /dev/kvmfr0'.\n"
+}
+
+post_upgrade() {
+  post_install "$@"
+}

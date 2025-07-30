@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = *
+
+[Action]
+Description=Cleaning up old package cache after install or upgrade
+When = PostTransaction
+Exec = /usr/bin/paccache -rk3

@@ -1,0 +1,11 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=apdatifier-dependencies
+pkgver=1
+pkgrel=3
+pkgdesc="Dependencies required for apdatifier."
+arch=('any')
+url="https://github.com/exequtic/apdatifier"
+license=('GPL')
+depends=('jq' 'pacman-contrib' 'fzf' 'tmux')
+optdepends=('paru: AUR Helper'
+            'yay: AUR Helper')

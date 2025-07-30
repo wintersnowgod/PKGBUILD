@@ -1,0 +1,18 @@
+pkgbase = torctl-gui
+	pkgdesc = A GUI frontend for torctl.
+	pkgver = 1.1.0
+	pkgrel = 1
+	url = https://github.com/s-n-alexeyev/torctl-gui
+	arch = any
+	license = GPL
+	depends = torctl
+	depends = tor
+	depends = yad
+	depends = macchanger
+	depends = iproute2
+	depends = libnotify
+	depends = systemd
+	source = https://github.com/s-n-alexeyev/torctl-gui/archive/refs/tags/v1.1.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = torctl-gui

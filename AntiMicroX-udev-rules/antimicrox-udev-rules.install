@@ -1,0 +1,11 @@
+post_install() {
+  sudo udevadm control --reload-rules && sudo udevadm trigger
+}
+
+post_remove() {
+  post_install "$@"
+}
+
+post_upgrade() {
+  post_install "$@"
+}

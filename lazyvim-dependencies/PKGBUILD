@@ -1,0 +1,10 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=lazyvim-dependencies
+pkgver=1
+pkgrel=1
+pkgdesc="Dependencies required for lazyvim."
+arch=('any')
+url="lazyvim.org"
+license=('GPL')
+depends=('git' 'lazygit' 'curl' 'fzf' 'ripgrep' 'fd' 'gcc' 'wl-clipboard' 'xclip')
+optdepends=('nerd-fonts: Optional, but needed.')

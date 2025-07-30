@@ -1,0 +1,15 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=antimicrox-udev-rules
+pkgver=1
+pkgrel=1
+pkgdesc="Automated udev rules for antimicrox flatpak or appimage."
+arch=('any')
+url="https://github.com/AntiMicroX/antimicrox"
+license=('GPL')
+source=("https://raw.githubusercontent.com/AntiMicroX/antimicrox/master/other/60-antimicrox-uinput.rules")
+sha256sums=('SKIP')
+install=${pkgname}.install
+
+package() {
+  install -Dm644 "${srcdir}/60-antimicrox-uinput.rules" "${pkgdir}/usr/lib/udev/rules.d/60-antimicrox-uinput.rules"
+}
