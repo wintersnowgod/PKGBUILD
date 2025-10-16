@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Exec=/usr/bin/pkgmgr
+Name=Package Manager
+Comment=A simple package manager for arch linux using fzf.
+Icon=emblem-package
+Categories=Utility
+Terminal=false
+StartupWMClass=pkgmgr

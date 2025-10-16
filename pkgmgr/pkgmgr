@@ -1,0 +1,887 @@
+#!/usr/bin/env bash
+
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+BLUE='\033[34m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+print_msg() {
+    echo -e "\n${BLUE}${BOLD}>>> $1${RESET}"
+}
+
+print_done() {
+    echo -e "\n${GREEN}${BOLD}✔ $1${RESET}"
+}
+
+print_warn() {
+    echo -e "\n${YELLOW}${BOLD}! $1${RESET}"
+}
+
+print_error() {
+    echo -e "\n${RED}${BOLD}✘ $1${RESET}"
+}
+
+print_finished() {
+    echo -e "\n${GREEN}${BOLD}::$1::${RESET}"
+}
+
+if [[ -z "$TERM" || "$TERM" == "dumb" ]]; then
+    if command -v kitty >/dev/null; then
+        kitty -e bash -c "$0"
+        exit
+    elif command -v alacritty >/dev/null; then
+        alacritty -e bash -c "$0"
+        exit
+    elif command -v konsole >/dev/null; then
+        konsole -e bash -c "$0"
+        exit
+    elif command -v gnome-terminal >/dev/null; then
+        gnome-terminal -- bash -c "$0"
+        exit
+    elif command -v xfce4-terminal >/dev/null; then
+        xfce4-terminal -e "bash -c '$0'"
+        exit
+    else
+        print_warn "No supported terminal emulator found. Please run this script from a terminal or open a issue saying which terminal emulator you are using to run this script."
+        exit 1
+    fi
+fi
+
+if ! command -v pacman >/dev/null; then
+    print_warn "Run only on systems with pacman as the package manager.\nIf you somehow managed to delete the \"pacman\" package then IDK.\n"
+    print_error "Press any key to EXIT"
+    read -n1 -r
+    exit 1
+fi
+
+aursetup() {
+    aurdetect() {
+        aur_helpers=()
+
+        command -v yay >/dev/null 2>&1 && aur_helpers+=("yay")
+        command -v paru >/dev/null 2>&1 && aur_helpers+=("paru")
+
+        if [ ${#aur_helpers[@]} -eq 0 ]; then
+            aur_helper="None"
+        else
+            aur_helpers+=("None")
+            aur_helper=$(printf "%s\n" "${aur_helpers[@]}" | \
+            fzf --prompt="Select AUR Helper: " \
+                --header="Choose which AUR helper to use. If you dont have a AUR helper choose \"None\"" \
+                --preview-window=wrap \
+                --preview '
+                    echo "Hovered Option:";
+                    echo {}
+            ')
+            [ -z "$aur_helper" ] && exit 1;
+        fi
+    }
+
+    aurflags() {
+        if [[ "$aur_helper" != "None" ]]; then
+            if [[ "$aur_helper" = "yay" ]]; then
+                aur_helper_flags=(  --devel
+                                    --needed
+                                    --answerupgrade None
+                                    --answerclean All
+                                    --answerdiff None
+                                    --noremovemake
+                                    --cleanafter
+                                    --sudoloop
+                                    --noconfirm
+                                    --mflags
+                                    --noconfirm)
+                aurdeveldatagen_flags=(-Y --gendb)
+                cleanpkg_flags=(-Scc)
+            elif [[ "$aur_helper" = "paru" ]]; then
+                aur_helper_flags=()
+                aurdeveldatagen_flags=(--gendb)
+                cleanpkg_flags=(-Sccd)
+            fi
+        fi
+    }
+    aurdetect
+    aurflags
+}
+
+inhibit_sleep() {
+    local who="$1"
+    local why="$2"
+    shift 2
+
+    setsid systemd-inhibit --what=shutdown:sleep \
+        --who="$who" \
+        --why="$why" \
+        sleep infinity >/dev/null 2>&1 &
+    local inhibit_pid=$!
+    "$@"
+    kill "$inhibit_pid" 2>/dev/null
+}
+
+continue_prompt_anykey() {
+    print_finished "Press any key to Continue"
+    (
+        trap 'exit 130' INT
+        read -n1 -r
+    )
+    status=$?
+    if [[ $status -eq 0 ]] || [[ $status -eq 130 ]]; then
+        clear
+        return
+    fi
+}
+
+copy_pkgnames() {
+    if command -v wl-copy >/dev/null 2>&1; then
+        echo "$pkg" | wl-copy 2>/dev/null && print_done "Copied Package Names to clipboard\n"; echo "$pkg"
+    elif command -v xclip >/dev/null 2>&1; then
+        echo "$pkg" | xclip -selection clipboard 2>/dev/null && print_done "Copied Package Names to clipboard\n"; echo "$pkg"
+    else
+        print_error "wl-copy or xclip not found. Install either one to copy the Package Names.\n\nSelected Packages:\n"; echo "$pkg";
+    fi
+}
+
+installcommand() {
+    case "$pkgchoice" in
+        Pacman)
+                print_msg "Installing Packages..."
+                (
+                    trap 'pkill sudo; exit 130' INT
+                    echo "$pkg" | xargs -ro sudo pacman -S --noconfirm
+                )
+                status=$?
+                if [[ $status -eq 0 ]]; then
+                    print_done "Successfully Installed Packages"
+                elif [[ $status -eq 130 ]]; then
+                    print_error "Package Install interrupted"
+                else
+                    print_error "Failed to Install Packages"
+                fi
+                continue_prompt_anykey
+        ;;
+        AUR)
+                print_msg "Installing Packages..."
+                (
+                    trap 'pkill sudo; exit 130' INT
+                    echo "$pkg" | xargs -ro "$aur_helper" "${aur_helper_flags[@]}" -S
+                )
+                status=$?
+                if [[ $status -eq 0 ]]; then
+                    print_done "Successfully Installed Packages"
+                elif [[ $status -eq 130 ]]; then
+                    print_error "Package Install interrupted"
+                else
+                    print_error "Failed to Install Packages"
+                fi
+                continue_prompt_anykey
+        ;;
+        Flatpak)
+                print_msg "Installing Packages..."
+                (
+                    trap 'pkill sudo; exit 130' INT
+                    echo "$pkg" | awk '{print $2, $1}' | xargs -ro flatpak install
+                )
+                status=$?
+                if [[ $status -eq 0 ]]; then
+                    print_done "Successfully Installed Packages"
+                elif [[ $status -eq 130 ]]; then
+                    print_error "Package Install interrupted"
+                else
+                    print_error "Failed to Install Packages"
+                fi
+                continue_prompt_anykey
+        ;;
+    esac
+}
+
+uninstallcommand() {
+    case "$pkgchoice" in
+        Pacman)
+                print_msg "Uninstalling Packages..."
+                (
+                    trap 'pkill sudo; exit 130' INT
+                    echo "$pkg" | xargs -ro sudo pacman -Rns --noconfirm
+                )
+                status=$?
+                if [[ $status -eq 0 ]]; then
+                    print_done "Successfully Unnstalled Packages"
+                elif [[ $status -eq 130 ]]; then
+                    print_error "Package Uninstall interrupted"
+                else
+                    print_error "Failed to Uninstall Packages"
+                fi
+                continue_prompt_anykey
+        ;;
+        AUR)
+                print_msg "Uninstalling Packages..."
+                (
+                    trap 'pkill sudo; exit 130' INT
+                    echo "$pkg" | xargs -ro "$aur_helper" -Rns --noconfirm
+                )
+                status=$?
+                if [[ $status -eq 0 ]]; then
+                    print_done "Successfully Unnstalled Packages"
+                elif [[ $status -eq 130 ]]; then
+                    print_error "Package Uninstall interrupted"
+                else
+                    print_error "Failed to Uninstall Packages"
+                fi
+                continue_prompt_anykey
+        ;;
+        Flatpak)
+                print_msg "Uninstalling Packages..."
+                (
+                    trap 'pkill sudo; exit 130' INT
+                    echo "$pkg" | xargs -ro flatpak uninstall --assumeyes
+                    flatpak uninstall --unused
+                )
+                status=$?
+                if [[ $status -eq 0 ]]; then
+                    print_done "Successfully Unnstalled Packages"
+                elif [[ $status -eq 130 ]]; then
+                    print_error "Package Uninstall interrupted"
+                else
+                    print_error "Failed to Uninstall Packages"
+                fi
+                continue_prompt_anykey
+        ;;
+    esac
+}
+
+pkgtype() {
+    case "$aur_helper" in
+    "None")
+        if command -v flatpak >/dev/null; then
+            pkgchoice=$(printf "Pacman\nFlatpak\nBack" | \
+            fzf --prompt="Search: " \
+                --header="Select package type: " \
+                --preview-window=wrap \
+                --preview '
+                    if [[ {} = "Back" ]]; then
+                        echo "↩ Return to previous menu"
+                    else
+                        echo "Hovered Option:";
+                        echo {}
+                    fi
+            ')
+        else
+            pkgchoice=$(printf "Pacman\nBack" | \
+            fzf --prompt="Search: " \
+                --header="Select package type: " \
+                --preview-window=wrap \
+                --preview '
+                    if [[ {} = "Back" ]]; then
+                        echo "↩ Return to previous menu"
+                    else
+                        echo "Hovered Option:";
+                        echo {}
+                    fi
+            ')
+        fi
+    ;;
+    *)
+        if command -v flatpak >/dev/null; then
+            pkgchoice=$(printf "Pacman\nAUR\nFlatpak\nBack" | \
+            fzf --prompt="Search: " \
+                --header="Select package type: " \
+                --preview-window=wrap \
+                --preview '
+                    if [[ {} = "Back" ]]; then
+                        echo "↩ Return to previous menu"
+                    else
+                        echo "Hovered Option:";
+                        echo {}
+                    fi
+            ')
+        else
+            pkgchoice=$(printf "Pacman\nAUR\nBack" | \
+            fzf --prompt="Search: " \
+                --header="Select package type: " \
+                --preview-window=wrap \
+                --preview '
+                    if [[ {} = "Back" ]]; then
+                        echo "↩ Return to previous menu"
+                    else
+                        echo "Hovered Option:";
+                        echo {}
+                    fi
+            ')
+        fi
+    ;;
+    esac
+}
+
+pkginstall() {
+    while true; do
+        pkgtype
+
+        [ -z "$pkgchoice" ] && return
+
+        case "$pkgchoice" in
+            Pacman)
+                pkg=$( { printf "Back\n"; pacman -Slq; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to Install." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            if pacman -Qi {1} &>/dev/null; then
+                                echo "*****Installed*****"
+                                echo
+                                pacman -Qi {1};
+                            else
+                                pacman -Si {1};
+                            fi
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)  inhibit_sleep "Installing Package" \
+                        "Prevent shutdown/sleep during package installation" \
+                        installcommand
+                        return
+                    ;;
+                esac
+                ;;
+            AUR)
+                pkg=$( { printf "Back\n"; "$aur_helper" -Slqa; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to Install." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            if '"$aur_helper"' -Qi {1} &>/dev/null; then
+                                echo "*****Installed*****"
+                                echo
+                                '"$aur_helper"' -Qi {1};
+                            else
+                                '"$aur_helper"' -Si {1};
+                            fi
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)  inhibit_sleep "Installing Package" \
+                        "Prevent shutdown/sleep during package installation" \
+                        installcommand
+                        return
+                    ;;
+                esac
+                ;;
+            Flatpak)
+                pkg=$( { printf "Back\n"; flatpak search --columns=application,remote,branch ""; } | \
+                fzf --multi --with-nth=1 \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to Install." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            if flatpak info {1} &>/dev/null; then
+                                echo "*****Installed*****"
+                                echo
+                                flatpak info {1}
+                            else
+                                flatpak remote-info {2} {1}/x86_64/{3} --system 2>/dev/null || flatpak remote-info {2} {1}/x86_64/{3} --user
+                            fi
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)  inhibit_sleep "Installing Package" \
+                        "Prevent shutdown/sleep during package installation" \
+                        installcommand
+                        return
+                    ;;
+                esac
+                ;;
+            "Back") return;;
+        esac
+    done
+}
+
+pkguninstall() {
+    while true; do
+        pkgtype
+
+        [ -z "$pkgchoice" ] && return
+
+        case "$pkgchoice" in
+            Pacman)
+                pkg=$( { printf "Back\n"; pacman -Qqn; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to Uninstall." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            pacman -Qin {1}
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)  inhibit_sleep "Uninstalling Package" \
+                        "Prevent shutdown/sleep during package uninstallation" \
+                        uninstallcommand
+                        return
+                    ;;
+                esac
+                ;;
+
+            AUR)
+                pkg=$( { printf "Back\n"; "$aur_helper" -Qqm; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to Uninstall." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            '"$aur_helper"' -Qim {1}
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)  inhibit_sleep "Uninstalling Package" \
+                        "Prevent shutdown/sleep during package uninstallation" \
+                        uninstallcommand
+                        return
+                    ;;
+                esac
+                ;;
+
+            Flatpak)
+                pkg=$( { printf "Back\n"; flatpak list --columns=application; } | grep -v "Application ID" | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to Uninstall." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            flatpak info {1}
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)  inhibit_sleep "Uninstalling Package" \
+                        "Prevent shutdown/sleep during package uninstallation" \
+                        uninstallcommand
+                        return
+                        ;;
+                esac
+                ;;
+            Back) return;;
+        esac
+    done
+}
+
+pkglist() {
+    while true; do
+        pkgtype
+
+        [ -z "$pkgchoice" ] && return
+
+        case "$pkgchoice" in
+            Pacman)
+                pkg=$( { printf "Back\n"; pacman -Qqn; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to copy" \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            pacman -Qin {1}
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)
+                        copy_pkgnames
+                        continue_prompt_anykey
+                        return
+                    ;;
+                esac
+                ;;
+
+            AUR)
+                pkg=$( { printf "Back\n"; "$aur_helper" -Qqm; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to copy" \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            '"$aur_helper"' -Qim {1}
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)
+                        copy_pkgnames
+                        continue_prompt_anykey
+                        return
+                    ;;
+                esac
+                ;;
+
+            Flatpak)
+                pkg=$( { printf "Back\n"; flatpak list --columns=application --app; } | grep -v "Application ID" | fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to copy" \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            echo "Selected Packages:";
+                            echo {+} | tr " " "\n";
+                            echo;
+                            echo "Hovered Packages:";
+                            echo {} | tr " " "\n";
+                            echo;
+                            flatpak info {1}
+                        fi
+                ')
+                [ -z "$pkg" ] && continue
+                case "$pkg" in
+                    "Back") continue;;
+                    *)
+                        copy_pkgnames
+                        continue_prompt_anykey
+                        return
+                    ;;
+                esac
+                ;;
+            Back) return;;
+        esac
+    done
+}
+
+pkgcheckupdates() {
+    while true; do
+        case "$aur_helper" in
+        "None")
+            if command -v flatpak >/dev/null; then
+                pkg=$( { printf "Back\n"; checkupdates & check_pid1=$!; flatpak remote-ls --updates --columns=application,version | grep -v "Application ID" & check_pid2=$!; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to copy." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            pacman -Si {1} || flatpak info {1}
+                        fi
+                ')
+            else
+                pkg=$( { printf "Back\n"; checkupdates & check_pid1=$!; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to copy." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            pacman -Si {1}
+                        fi
+                ')
+            fi
+        ;;
+        *)
+            if command -v flatpak >/dev/null; then
+                pkg=$( { printf "Back\n"; checkupdates | sed 's/\x1b\[[0-9;]*m//g' & check_pid1=$!; "$aur_helper" -Qua --devel & check_pid2=$!; flatpak remote-ls --updates --columns=application,version | grep -v "Application ID" & check_pid3=$!; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to copy." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            '"$aur_helper"' -Si {1} || flatpak info {1}
+                        fi
+                ')
+            else
+                pkg=$( { printf "Back\n"; checkupdates | sed 's/\x1b\[[0-9;]*m//g' & check_pid1=$!; "$aur_helper" -Qua --devel & check_pid2=$!; } | \
+                fzf --multi \
+                    --prompt="Search Packages: " \
+                    --header="Use TAB to select, ENTER to copy." \
+                    --preview-window=wrap \
+                    --preview '
+                        if [[ {} = "Back" ]]; then
+                            echo "↩ Return to previous menu"
+                        else
+                            '"$aur_helper"' -Si {1}
+                        fi
+                ')
+            fi
+        ;;
+        esac
+        [ -z "$pkg" ] && return
+        case "$pkg" in
+            "Back") return;;
+            *)
+                copy_pkgnames
+                continue_prompt_anykey
+                return
+            ;;
+        esac
+    done
+}
+
+pkgupdate() {
+    update_arch() {
+        print_msg "Updating Arch repo packages with \"sudo pacman -Syu\"..."
+        (
+            trap 'pkill sudo; exit 130' INT
+            sudo pacman -Syu --noconfirm
+        )
+        status=$?
+        if [[ $status -eq 0 ]]; then
+            print_done "Arch repo packages updated"
+        elif [[ $status -eq 130 ]]; then
+            print_error "Arch repo update interrupted"
+        else
+            print_error "Failed to update Arch repo packages"
+        fi
+    }
+
+    update_aur() {
+        print_msg "Updating AUR packages with \"$aur_helper ${aur_helper_flags[*]} -Syua\"..."
+        (
+            trap 'pkill sudo; exit 130' INT
+            "$aur_helper" "${aur_helper_flags[@]}" -Syua
+        )
+        status=$?
+        if [[ $status -eq 0 ]]; then
+            print_done "AUR packages updated"
+        elif [[ $status -eq 130 ]]; then
+            print_error "AUR update interrupted"
+        else
+            print_error "Failed to update AUR packages"
+        fi
+    }
+
+    update_flatpak() {
+        print_msg "Updating Flatpak packages with \"flatpak update --assumeyes\"..."
+        (
+            trap 'exit 130' INT
+            flatpak update --assumeyes
+        )
+        status=$?
+        if [[ $status -eq 0 ]]; then
+            print_done "Flatpak packages updated"
+        elif [[ $status -eq 130 ]]; then
+            print_error "Flatpak update interrupted"
+        else
+            print_error "Failed to update Flatpak packages"
+        fi
+    }
+
+    mainupdate() {
+        update_arch
+        if [[ "$aur_helper" != "None" ]]; then
+            update_aur
+        fi
+        if command -v flatpak >/dev/null; then
+            update_flatpak
+        fi
+        continue_prompt_anykey
+    }
+
+    mainupdate
+}
+
+aurdeveldatagen() {
+    print_msg "Generating data for Devel Packages eg:- \"-git\" Packages"
+    "$aur_helper" "${aurdeveldatagen_flags[@]}";
+    continue_prompt_anykey
+    return
+}
+
+pkgclean() {
+    print_msg "Cleaning Package Cache"
+    if [[ "$aur_helper" = "None" ]]; then
+        yes | sudo pacman -Scc;
+        if command -v flatpak >/dev/null; then
+            flatpak uninstall --unused
+        fi
+    else
+        yes | "$aur_helper" "${cleanpkg_flags[@]}";
+        if command -v flatpak >/dev/null; then
+            flatpak uninstall --unused
+        fi
+    fi
+    continue_prompt_anykey
+    return
+}
+
+pkgorphans() {
+    pkg=$( { printf "Back\n"; pacman -Qdtq; } | \
+    fzf --multi \
+        --prompt="Search Packages: " \
+        --header="Use TAB to select, ENTER to Uninstall." \
+        --preview-window=wrap \
+        --preview '
+            if [[ {} = "Back" ]]; then
+                echo "↩ Return to previous menu"
+            else
+                echo "Selected Packages:";
+                echo {+} | tr " " "\n";
+                echo;
+                echo "Hovered Packages:";
+                echo {} | tr " " "\n";
+                echo;
+                pacman -Qi {1}
+            fi
+    ')
+
+    [ -z "$pkg" ] && return
+
+    [ -z "$pkgchoice" ] && pkgchoice="Pacman"
+
+    case "$pkg" in
+        "Back") return;;
+        *)
+            inhibit_sleep "Uninstalling Package" \
+            "Prevent shutdown/sleep during package uninstallation" \
+            uninstallcommand
+            return
+        ;;
+    esac
+}
+
+pkgmenu() {
+    while true; do
+        case "$aur_helper" in
+        "None")
+            pkgmanager=$(printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nChange AUR Helper\nExit" | \
+            fzf --prompt="Search: " \
+                --header="Select Operation: " \
+                --preview-window=wrap \
+                --preview '
+                    fastfetch;
+                    echo "\n\nAUR Helper = '"$aur_helper"'" && echo "\nPacman-only mode";
+                    echo;
+                    echo "Hovered Option:";
+                    echo {};
+                    echo;
+                    if [[ {} = "Exit" ]]; then
+                        echo "↩ Exit the Manager"
+                    fi
+            ')
+        ;;
+        *)
+            pkgmanager=$(printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nGenerate devel Data For AUR Helpers\nChange AUR Helper\nExit" | \
+            fzf --prompt="Search: " \
+                --header="Select Operation: " \
+                --preview-window=wrap \
+                --preview '
+                    fastfetch;
+                    echo "\n\nAUR Helper = '"$aur_helper"'";
+                    echo;
+                    echo "Hovered Option:";
+                    echo {};
+                    echo;
+                    if [[ {} = "Exit" ]]; then
+                        echo "↩ Exit the Manager"
+                    fi
+            ')
+        ;;
+        esac
+
+        [ -z "$pkgmanager" ] && return
+
+        case "$pkgmanager" in
+            "Install Packages") pkginstall;;
+            "Uninstall Packages") pkguninstall;;
+            "Check Updates") pkgcheckupdates;;
+            "Update System") inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" pkgupdate;;
+            "List Packages") pkglist;;
+            "List Orphan Packages") pkgorphans;;
+            "Clean Packages") pkgclean;;
+            "Generate devel Data For AUR Helpers") aurdeveldatagen;;
+            "Change AUR Helper") aursetup && continue;;
+            "Exit") break;;
+        esac
+    done
+}
+
+aursetup
+pkgmenu

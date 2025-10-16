@@ -1,0 +1,19 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=pkgmgr
+pkgver=1
+pkgrel=1
+pkgdesc="A simple package manager for arch linux using fzf."
+arch=('any')
+depends=('bash' 'fzf' 'pacman-contrib')
+optdepends=('xclip: For X11 copy to clipboard'
+            'wl-copy: For Wayland Copy to clipboard')
+source=("pkgmgr"
+        "pkgmgr.desktop")
+sha256sums=('7605a111f3d277a097ab923bde74e9172d9a1392c406dce7fc9b05e579f90f48'
+            '93caa3f225a3e191b5c2534303c711ea586a95898a741f7fbc3300a5e8cc0c11')
+
+package() {
+  install -Dm644 "${srcdir}/pkgmgr" "${pkgdir}/usr/bin/pkgmgr"
+  install -Dm644 "${srcdir}/pkgmgr.desktop" "${pkgdir}/usr/share/applications/pkgmgr.desktop"
+  chmod +x "${pkgdir}/usr/bin/pkgmgr"
+}
