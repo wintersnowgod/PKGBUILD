@@ -640,77 +640,66 @@ pkglist() {
 }
 
 pkgcheckupdates() {
-    while true; do
-        case "$aur_helper" in
-        "None")
-            if command -v flatpak >/dev/null; then
-                pkg=$( { printf "Back\n"; checkupdates & check_pid1=$!; flatpak remote-ls --updates --columns=application,version | grep -v "Application ID" & check_pid2=$!; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to copy." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            pacman -Si {1} || flatpak info {1}
-                        fi
-                ')
-            else
-                pkg=$( { printf "Back\n"; checkupdates & check_pid1=$!; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to copy." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            pacman -Si {1}
-                        fi
-                ')
-            fi
-        ;;
-        *)
-            if command -v flatpak >/dev/null; then
-                pkg=$( { printf "Back\n"; checkupdates | sed 's/\x1b\[[0-9;]*m//g' & check_pid1=$!; "$aur_helper" -Qua --devel & check_pid2=$!; flatpak remote-ls --updates --columns=application,version | grep -v "Application ID" & check_pid3=$!; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to copy." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            '"$aur_helper"' -Si {1} || flatpak info {1}
-                        fi
-                ')
-            else
-                pkg=$( { printf "Back\n"; checkupdates | sed 's/\x1b\[[0-9;]*m//g' & check_pid1=$!; "$aur_helper" -Qua --devel & check_pid2=$!; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to copy." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            '"$aur_helper"' -Si {1}
-                        fi
-                ')
-            fi
-        ;;
-        esac
-        [ -z "$pkg" ] && return
-        case "$pkg" in
-            "Back") return;;
+    cleanup() {
+        for pid in "$check_pid1" "$check_pid2" "$check_pid3"; do
+            [ -n "$pid" ] && kill "$pid" 2>/dev/null
+        done
+    }
+
+    checkupdatesmain() {
+        while true; do
+            case "$aur_helper" in
+            "None")
+                command -v flatpak >/dev/null && helper_cmd="pacman -Si {1} || flatpak info {1}" || helper_cmd="pacman -Si {1}"
+                ;;
             *)
-                copy_pkgnames
-                continue_prompt_anykey
-                return
-            ;;
-        esac
-    done
+                command -v flatpak >/dev/null && helper_cmd="$aur_helper -Si {1} || flatpak info {1}" || helper_cmd="$aur_helper -Si {1}"
+                ;;
+            esac
+            pkg=$( {
+                printf "Back\n"
+                {
+                    checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' &
+                    check_pid1=$!
+
+                    if [ "$aur_helper" != "None" ]; then
+                        "$aur_helper" -Qua --devel 2>/dev/null &
+                        check_pid2=$!
+                    fi
+
+                    if command -v flatpak >/dev/null; then
+                        flatpak remote-ls --updates --columns=application,version \
+                            | grep -v "Application ID" 2>/dev/null &
+                        check_pid3=$!
+                    fi
+                }
+            } | \
+            fzf --multi \
+                --prompt="Search Packages: " \
+                --header="Use TAB to select, ENTER to copy." \
+                --preview-window=wrap \
+                --preview '
+                    if [[ {} = "Back" ]]; then
+                        echo "↩ Return to previous menu"
+                    else
+                        '"$helper_cmd"'
+                    fi
+            ')
+            cleanup
+            [ -z "$pkg" ] && cleanup && return
+            case "$pkg" in
+                "Back") cleanup
+                        return
+                ;;
+                *)      cleanup
+                        copy_pkgnames
+                        continue_prompt_anykey
+                        return
+                ;;
+            esac
+        done
+    }
+    checkupdatesmain
 }
 
 pkgupdate() {
