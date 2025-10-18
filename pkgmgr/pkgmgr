@@ -30,19 +30,19 @@ print_finished() {
 if [[ -z "$TERM" || "$TERM" == "dumb" ]]; then
     if command -v kitty >/dev/null; then
         kitty -e bash -c "$0"
-        exit
+        exit 0
     elif command -v alacritty >/dev/null; then
         alacritty -e bash -c "$0"
-        exit
+        exit 0
     elif command -v konsole >/dev/null; then
         konsole -e bash -c "$0"
-        exit
+        exit 0
     elif command -v gnome-terminal >/dev/null; then
         gnome-terminal -- bash -c "$0"
-        exit
+        exit 0
     elif command -v xfce4-terminal >/dev/null; then
         xfce4-terminal -e "bash -c '$0'"
-        exit
+        exit 0
     else
         print_warn "No supported terminal emulator found. Please run this script from a terminal or open a issue saying which terminal emulator you are using to run this script."
         exit 1
