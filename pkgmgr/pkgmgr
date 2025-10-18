@@ -107,17 +107,23 @@ aursetup() {
 }
 
 inhibit_sleep() {
-    local who="$1"
-    local why="$2"
-    shift 2
-
-    setsid systemd-inhibit --what=shutdown:sleep \
-        --who="$who" \
-        --why="$why" \
-        sleep infinity >/dev/null 2>&1 &
-    local inhibit_pid=$!
-    "$@"
-    kill "$inhibit_pid" 2>/dev/null
+    if command -v systemd-inhibit >/dev/null 2>&1; then
+        print_warn "Inhibiting Sleep using \"systemd-inhibit\".\n"
+        local who="$1"
+        local why="$2"
+        shift 2
+        setsid systemd-inhibit --what=shutdown:sleep \
+            --who="$who" \
+            --why="$why" \
+            sleep infinity >/dev/null 2>&1 &
+        local inhibit_pid=$!
+        "$@"
+        kill "$inhibit_pid" 2>/dev/null
+    else
+        print_warn "\"systemd-inhibit\" command not found. Unable to Inhibit Sleep."
+        shift 2
+        "$@"
+    fi
 }
 
 continue_prompt_anykey() {
