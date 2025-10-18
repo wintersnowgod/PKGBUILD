@@ -484,10 +484,11 @@ pkglist() {
 }
 
 pkgcheckupdates() {
-    cleanup() {
+    checkupdatescleanup() {
         for pid in "$check_pid1" "$check_pid2" "$check_pid3"; do
             [ -n "$pid" ] && kill "$pid" 2>/dev/null
         done
+        return
     }
 
     checkupdatesmain() {
@@ -528,22 +529,19 @@ pkgcheckupdates() {
                     else
                         '"$helper_cmd"'
                     fi
-            ')
-            cleanup
-            [ -z "$pkg" ] && cleanup && return
-            case "$pkg" in
-                "Back") cleanup
-                        return
-                ;;
-                *)      cleanup
-                        copy_pkgnames
-                        continue_prompt_anykey
-                        return
-                ;;
-            esac
-        done
-    }
-    checkupdatesmain
+        ')
+        [ -z "$checkupdatespkg" ] && { checkupdatescleanup; return; }
+        case "$checkupdatespkg" in
+            "Back") checkupdatescleanup
+                    return
+            ;;
+            *)      checkupdatescleanup
+                    copy_pkgnames "$checkupdatespkg"
+                    continue_prompt_anykey
+                    return
+            ;;
+        esac
+    done
 }
 
 pkgupdate() {
