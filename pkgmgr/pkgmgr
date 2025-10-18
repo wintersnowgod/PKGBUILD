@@ -676,9 +676,14 @@ pkgorphans() {
 
 pkgmenu() {
     while true; do
-        case "$aur_helper" in
-        "None")
-            pkgmanager=$(printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nChange AUR Helper\nExit" | \
+        pkgmanager=$( 
+            {
+                if [[ "$aur_helper" = "None" ]]; then
+                    printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nChange AUR Helper\nExit"
+                else
+                    printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nGenerate devel Data For AUR Helpers\nChange AUR Helper\nExit"
+                fi
+            } | \
             fzf --prompt="Search: " \
                 --header="Select Operation: " \
                 --preview-window=wrap \
@@ -692,26 +697,7 @@ pkgmenu() {
                     if [[ {} = "Exit" ]]; then
                         echo "↩ Exit the Manager"
                     fi
-            ')
-        ;;
-        *)
-            pkgmanager=$(printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nGenerate devel Data For AUR Helpers\nChange AUR Helper\nExit" | \
-            fzf --prompt="Search: " \
-                --header="Select Operation: " \
-                --preview-window=wrap \
-                --preview '
-                    fastfetch;
-                    echo "\n\nAUR Helper = '"$aur_helper"'";
-                    echo;
-                    echo "Hovered Option:";
-                    echo {};
-                    echo;
-                    if [[ {} = "Exit" ]]; then
-                        echo "↩ Exit the Manager"
-                    fi
-            ')
-        ;;
-        esac
+        ')
 
         [ -z "$pkgmanager" ] && return
 
