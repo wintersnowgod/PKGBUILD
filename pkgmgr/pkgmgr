@@ -260,65 +260,29 @@ uninstallcommand() {
 
 pkgtype() {
     case "$aur_helper" in
-    "None")
-        if command -v flatpak >/dev/null; then
-            pkgchoice=$(printf "Pacman\nFlatpak\nBack" | \
-            fzf --prompt="Search: " \
-                --header="Select package type: " \
-                --preview-window=wrap \
-                --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Hovered Option:";
-                        echo {}
-                    fi
-            ')
-        else
-            pkgchoice=$(printf "Pacman\nBack" | \
-            fzf --prompt="Search: " \
-                --header="Select package type: " \
-                --preview-window=wrap \
-                --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Hovered Option:";
-                        echo {}
-                    fi
-            ')
-        fi
-    ;;
-    *)
-        if command -v flatpak >/dev/null; then
-            pkgchoice=$(printf "Pacman\nAUR\nFlatpak\nBack" | \
-            fzf --prompt="Search: " \
-                --header="Select package type: " \
-                --preview-window=wrap \
-                --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Hovered Option:";
-                        echo {}
-                    fi
-            ')
-        else
-            pkgchoice=$(printf "Pacman\nAUR\nBack" | \
-            fzf --prompt="Search: " \
-                --header="Select package type: " \
-                --preview-window=wrap \
-                --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Hovered Option:";
-                        echo {}
-                    fi
-            ')
-        fi
-    ;;
+        "None")
+            pkgtypechoices="Pacman"
+            ;;
+        *)
+            pkgtypechoices="Pacman\nAUR"
+            ;;
     esac
+
+    command -v flatpak >/dev/null && pkgtypechoices="${pkgtypechoices}\nFlatpak"
+    pkgtypechoices="${pkgtypechoices}\nBack"
+
+    pkgchoice=$(printf "%b" "$pkgtypechoices" | \
+            fzf --prompt="Search: " \
+                --header="Select package type: " \
+                --preview-window=wrap \
+                --preview '
+                    if [[ {} = "Back" ]]; then
+                        echo "↩ Return to previous menu"
+                    else
+                        echo "Hovered Option:";
+                        echo {}
+                    fi
+            ')
 }
 
 pkginstall() {
