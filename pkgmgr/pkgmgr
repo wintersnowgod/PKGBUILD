@@ -132,8 +132,8 @@ continue_prompt_anykey() {
         trap 'exit 130' INT
         read -n1 -r
     )
-    status=$?
-    if [[ $status -eq 0 ]] || [[ $status -eq 130 ]]; then
+    anykey_prompt_status=$?
+    if [[ $anykey_prompt_status -eq 0 ]] || [[ $anykey_prompt_status -eq 130 ]]; then
         clear
         return
     fi
@@ -157,10 +157,10 @@ installcommand() {
                     trap 'pkill sudo; exit 130' INT
                     echo "$pkg" | xargs -ro sudo pacman -S --noconfirm
                 )
-                status=$?
-                if [[ $status -eq 0 ]]; then
+                repo_install_status=$?
+                if [[ $repo_install_status -eq 0 ]]; then
                     print_done "Successfully Installed Packages"
-                elif [[ $status -eq 130 ]]; then
+                elif [[ $repo_install_status -eq 130 ]]; then
                     print_error "Package Install interrupted"
                 else
                     print_error "Failed to Install Packages"
@@ -173,10 +173,10 @@ installcommand() {
                     trap 'pkill sudo; exit 130' INT
                     echo "$pkg" | xargs -ro "$aur_helper" "${aur_helper_flags[@]}" -S
                 )
-                status=$?
-                if [[ $status -eq 0 ]]; then
+                aur_install_status=$?
+                if [[ $aur_install_status -eq 0 ]]; then
                     print_done "Successfully Installed Packages"
-                elif [[ $status -eq 130 ]]; then
+                elif [[ $aur_install_status -eq 130 ]]; then
                     print_error "Package Install interrupted"
                 else
                     print_error "Failed to Install Packages"
@@ -189,10 +189,10 @@ installcommand() {
                     trap 'pkill sudo; exit 130' INT
                     echo "$pkg" | awk '{print $2, $1}' | xargs -ro flatpak install
                 )
-                status=$?
-                if [[ $status -eq 0 ]]; then
+                flatpak_install_status=$?
+                if [[ $flatpak_install_status -eq 0 ]]; then
                     print_done "Successfully Installed Packages"
-                elif [[ $status -eq 130 ]]; then
+                elif [[ $flatpak_install_status -eq 130 ]]; then
                     print_error "Package Install interrupted"
                 else
                     print_error "Failed to Install Packages"
@@ -210,10 +210,10 @@ uninstallcommand() {
                     trap 'pkill sudo; exit 130' INT
                     echo "$pkg" | xargs -ro sudo pacman -Rns --noconfirm
                 )
-                status=$?
-                if [[ $status -eq 0 ]]; then
+                repo_uninstall_status=$?
+                if [[ $repo_uninstall_status -eq 0 ]]; then
                     print_done "Successfully Unnstalled Packages"
-                elif [[ $status -eq 130 ]]; then
+                elif [[ $repo_uninstall_status -eq 130 ]]; then
                     print_error "Package Uninstall interrupted"
                 else
                     print_error "Failed to Uninstall Packages"
@@ -226,10 +226,10 @@ uninstallcommand() {
                     trap 'pkill sudo; exit 130' INT
                     echo "$pkg" | xargs -ro "$aur_helper" -Rns --noconfirm
                 )
-                status=$?
-                if [[ $status -eq 0 ]]; then
+                aur_uninstall_status=$?
+                if [[ $aur_uninstall_status -eq 0 ]]; then
                     print_done "Successfully Unnstalled Packages"
-                elif [[ $status -eq 130 ]]; then
+                elif [[ $aur_uninstall_status -eq 130 ]]; then
                     print_error "Package Uninstall interrupted"
                 else
                     print_error "Failed to Uninstall Packages"
@@ -243,10 +243,10 @@ uninstallcommand() {
                     echo "$pkg" | xargs -ro flatpak uninstall --assumeyes
                     flatpak uninstall --unused
                 )
-                status=$?
-                if [[ $status -eq 0 ]]; then
+                flatpak_uninstall_status=$?
+                if [[ $flatpak_uninstall_status -eq 0 ]]; then
                     print_done "Successfully Unnstalled Packages"
-                elif [[ $status -eq 130 ]]; then
+                elif [[ $flatpak_uninstall_status -eq 130 ]]; then
                     print_error "Package Uninstall interrupted"
                 else
                     print_error "Failed to Uninstall Packages"
@@ -762,7 +762,7 @@ pkgupdate() {
         if command -v flatpak >/dev/null; then
             if [[ $flatpak_update_status -eq 0 ]]; then
                 print_done "Flatpak packages updated"
-            elif [[ $status -eq 130 ]]; then
+            elif [[ $flatpak_update_status -eq 130 ]]; then
                 print_error "Flatpak update interrupted"
             else
                 print_error "Failed to update Flatpak packages"
