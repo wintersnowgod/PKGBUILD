@@ -286,6 +286,10 @@ pkgtype() {
 }
 
 pkginstall() {
+    installcleanup() {
+        [ -n "$install_pid" ] && kill "$install_pid" 2>/dev/null
+        return
+    }
     while true; do
         
         pkgtype
@@ -353,10 +357,12 @@ pkginstall() {
                         '"$pkglisthelper"'
                     fi
         ')
-        [ -z "$pkg" ] && continue
-        case "$pkg" in
-            "Back") continue;;
-            *)  inhibit_sleep "Installing Package" \
+        [ -z "$installpkg" ] && { installcleanup; continue; }
+        case "$installpkg" in
+            "Back") installcleanup
+                    continue;;
+            *)  installcleanup
+                inhibit_sleep "Installing Package" \
                 "Prevent shutdown/sleep during package installation" \
                 installcommand
                 return
