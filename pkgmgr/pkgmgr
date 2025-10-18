@@ -141,11 +141,13 @@ continue_prompt_anykey() {
 
 copy_pkgnames() {
     if command -v wl-copy >/dev/null 2>&1; then
-        echo "$pkg" | wl-copy 2>/dev/null && print_done "Copied Package Names to clipboard\n"; echo "$pkg"
+        echo "$pkg" | wl-copy 2>/dev/null && print_done "Copied Package Names to clipboard\n"
+        echo "$pkg"
     elif command -v xclip >/dev/null 2>&1; then
-        echo "$pkg" | xclip -selection clipboard 2>/dev/null && print_done "Copied Package Names to clipboard\n"; echo "$pkg"
+        echo "$pkg" | xclip -selection clipboard 2>/dev/null && print_done "Copied Package Names to clipboard\n"
+        echo "$pkg"
     else
-        print_error "wl-copy or xclip not found. Install either one to copy the Package Names.\n\nSelected Packages:\n"; echo "$pkg";
+        print_error "\"wl-copy\" or \"xclip\" not found. Install either one to copy the Package Names.\n\nSelected Packages:\n"; echo "$pkg";
     fi
 }
 
