@@ -296,10 +296,10 @@ pkginstall() {
             Pacman)
                 pkglistcommand='{ pacman -Slq; }'
                 pkglisthelper='
-                            if pacman -Qi {1} &>/dev/null; then
+                            if pacman -Qin {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
-                                pacman -Qi {1};
+                                pacman -Qin {1};
                             else
                                 pacman -Si {1};
                             fi
@@ -308,10 +308,10 @@ pkginstall() {
             AUR)
                 pkglistcommand="{ $aur_helper -Slqa; }"
                 pkglisthelper='
-                            if '"$aur_helper"' -Qi {1} &>/dev/null; then
+                            if '"$aur_helper"' -Qim {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
-                                '"$aur_helper"' -Qi {1};
+                                '"$aur_helper"' -Qim {1} || pacman -Qim {1};
                             else
                                 '"$aur_helper"' -Si {1};
                             fi
