@@ -712,14 +712,7 @@ pkgupdate() {
             trap 'pkill sudo; exit 130' INT
             sudo pacman -Syu --noconfirm
         )
-        status=$?
-        if [[ $status -eq 0 ]]; then
-            print_done "Arch repo packages updated"
-        elif [[ $status -eq 130 ]]; then
-            print_error "Arch repo update interrupted"
-        else
-            print_error "Failed to update Arch repo packages"
-        fi
+        repo_update_status=$?
     }
 
     update_aur() {
@@ -728,14 +721,7 @@ pkgupdate() {
             trap 'pkill sudo; exit 130' INT
             "$aur_helper" "${aur_helper_flags[@]}" -Syua
         )
-        status=$?
-        if [[ $status -eq 0 ]]; then
-            print_done "AUR packages updated"
-        elif [[ $status -eq 130 ]]; then
-            print_error "AUR update interrupted"
-        else
-            print_error "Failed to update AUR packages"
-        fi
+        aur_update_status=$?
     }
 
     update_flatpak() {
@@ -744,14 +730,39 @@ pkgupdate() {
             trap 'exit 130' INT
             flatpak update --assumeyes
         )
-        status=$?
-        if [[ $status -eq 0 ]]; then
-            print_done "Flatpak packages updated"
-        elif [[ $status -eq 130 ]]; then
-            print_error "Flatpak update interrupted"
+        flatpak_update_status=$?
+    }
+
+    print_status() {
+        print_warn "------------------------------------------------------------------------- !"
+        if [[ $repo_update_status -eq 0 ]]; then
+            print_done "Arch repo packages updated"
+        elif [[ $repo_update_status -eq 130 ]]; then
+            print_error "Arch repo update interrupted"
         else
-            print_error "Failed to update Flatpak packages"
+            print_error "Failed to update Arch repo packages"
         fi
+
+        if [[ "$aur_helper" != "None" ]]; then
+            if [[ $aur_update_status -eq 0 ]]; then
+                print_done "AUR packages updated"
+            elif [[ $aur_update_status -eq 130 ]]; then
+                print_error "AUR update interrupted"
+            else
+                print_error "Failed to update AUR packages"
+            fi
+        fi
+
+        if command -v flatpak >/dev/null; then
+            if [[ $flatpak_update_status -eq 0 ]]; then
+                print_done "Flatpak packages updated"
+            elif [[ $status -eq 130 ]]; then
+                print_error "Flatpak update interrupted"
+            else
+                print_error "Failed to update Flatpak packages"
+            fi
+        fi
+        print_warn "------------------------------------------------------------------------- !\n"
     }
 
     mainupdate() {
@@ -762,6 +773,7 @@ pkgupdate() {
         if command -v flatpak >/dev/null; then
             update_flatpak
         fi
+        print_status
         continue_prompt_anykey
     }
 
