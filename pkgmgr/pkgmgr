@@ -287,27 +287,15 @@ pkgtype() {
 
 pkginstall() {
     while true; do
+        
         pkgtype
-
+        
         [ -z "$pkgchoice" ] && return
 
         case "$pkgchoice" in
             Pacman)
-                pkg=$( { printf "Back\n"; pacman -Slq; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to Install." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            echo "Selected Packages:";
-                            echo {+} | tr " " "\n";
-                            echo;
-                            echo "Hovered Packages:";
-                            echo {} | tr " " "\n";
-                            echo;
+                pkglistcommand='{ pacman -Slq; }'
+                pkglisthelper='
                             if pacman -Qi {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
@@ -315,34 +303,11 @@ pkginstall() {
                             else
                                 pacman -Si {1};
                             fi
-                        fi
-                ')
-                [ -z "$pkg" ] && continue
-                case "$pkg" in
-                    "Back") continue;;
-                    *)  inhibit_sleep "Installing Package" \
-                        "Prevent shutdown/sleep during package installation" \
-                        installcommand
-                        return
-                    ;;
-                esac
-                ;;
+                '
+            ;;
             AUR)
-                pkg=$( { printf "Back\n"; "$aur_helper" -Slqa; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to Install." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            echo "Selected Packages:";
-                            echo {+} | tr " " "\n";
-                            echo;
-                            echo "Hovered Packages:";
-                            echo {} | tr " " "\n";
-                            echo;
+                pkglistcommand="{ $aur_helper -Slqa; }"
+                pkglisthelper='
                             if '"$aur_helper"' -Qi {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
@@ -350,34 +315,11 @@ pkginstall() {
                             else
                                 '"$aur_helper"' -Si {1};
                             fi
-                        fi
-                ')
-                [ -z "$pkg" ] && continue
-                case "$pkg" in
-                    "Back") continue;;
-                    *)  inhibit_sleep "Installing Package" \
-                        "Prevent shutdown/sleep during package installation" \
-                        installcommand
-                        return
-                    ;;
-                esac
-                ;;
+                '
+            ;;
             Flatpak)
-                pkg=$( { printf "Back\n"; flatpak search --columns=application,remote,branch ""; } | \
-                fzf --multi --with-nth=1 \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to Install." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            echo "Selected Packages:";
-                            echo {+} | tr " " "\n";
-                            echo;
-                            echo "Hovered Packages:";
-                            echo {} | tr " " "\n";
-                            echo;
+                pkglistcommand='{ flatpak search --columns=application,remote,branch ""; }'
+                pkglisthelper='
                             if flatpak info {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
@@ -385,19 +327,40 @@ pkginstall() {
                             else
                                 flatpak remote-info {2} {1}/x86_64/{3} --system 2>/dev/null || flatpak remote-info {2} {1}/x86_64/{3} --user
                             fi
-                        fi
-                ')
-                [ -z "$pkg" ] && continue
-                case "$pkg" in
-                    "Back") continue;;
-                    *)  inhibit_sleep "Installing Package" \
-                        "Prevent shutdown/sleep during package installation" \
-                        installcommand
-                        return
-                    ;;
-                esac
-                ;;
-            "Back") return;;
+                '
+            ;;
+            Back)
+                return
+            ;;
+        esac
+
+        pkg=$( { printf "Back\n"; eval "$pkglistcommand";
+            } | \
+        fzf --multi \
+            --prompt="Search Packages: " \
+            --header="Use TAB to select, ENTER to Install." \
+            --preview-window=wrap \
+            --preview '
+                if [[ {} = "Back" ]]; then
+                    echo "↩ Return to previous menu"
+                else
+                    echo "Selected Packages:";
+                    echo {+} | tr " " "\n";
+                    echo;
+                    echo "Hovered Packages:";
+                    echo {} | tr " " "\n";
+                    echo;
+                    '"$pkglisthelper"'
+                fi
+        ')
+        [ -z "$pkg" ] && continue
+        case "$pkg" in
+            "Back") continue;;
+            *)  inhibit_sleep "Installing Package" \
+                "Prevent shutdown/sleep during package installation" \
+                installcommand
+                return
+            ;;
         esac
     done
 }
