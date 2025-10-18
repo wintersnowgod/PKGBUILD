@@ -367,101 +367,56 @@ pkginstall() {
 
 pkguninstall() {
     while true; do
+
         pkgtype
 
         [ -z "$pkgchoice" ] && return
-
+        
         case "$pkgchoice" in
             Pacman)
-                pkg=$( { printf "Back\n"; pacman -Qqn; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to Uninstall." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            echo "Selected Packages:";
-                            echo {+} | tr " " "\n";
-                            echo;
-                            echo "Hovered Packages:";
-                            echo {} | tr " " "\n";
-                            echo;
-                            pacman -Qin {1}
-                        fi
-                ')
-                [ -z "$pkg" ] && continue
-                case "$pkg" in
-                    "Back") continue;;
-                    *)  inhibit_sleep "Uninstalling Package" \
-                        "Prevent shutdown/sleep during package uninstallation" \
-                        uninstallcommand
-                        return
-                    ;;
-                esac
-                ;;
-
+                pkglistcommand='{ pacman -Qqn; }'
+                pkglisthelper='pacman -Qin {1}'
+            ;;
             AUR)
-                pkg=$( { printf "Back\n"; "$aur_helper" -Qqm; } | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to Uninstall." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            echo "Selected Packages:";
-                            echo {+} | tr " " "\n";
-                            echo;
-                            echo "Hovered Packages:";
-                            echo {} | tr " " "\n";
-                            echo;
-                            '"$aur_helper"' -Qim {1}
-                        fi
-                ')
-                [ -z "$pkg" ] && continue
-                case "$pkg" in
-                    "Back") continue;;
-                    *)  inhibit_sleep "Uninstalling Package" \
-                        "Prevent shutdown/sleep during package uninstallation" \
-                        uninstallcommand
-                        return
-                    ;;
-                esac
-                ;;
-
+                pkglistcommand="{ $aur_helper -Qqm; }"
+                pkglisthelper=''"$aur_helper"' -Qim {1} || pacman -Qim {1}'
+            ;;
             Flatpak)
-                pkg=$( { printf "Back\n"; flatpak list --columns=application; } | grep -v "Application ID" | \
-                fzf --multi \
-                    --prompt="Search Packages: " \
-                    --header="Use TAB to select, ENTER to Uninstall." \
-                    --preview-window=wrap \
-                    --preview '
-                        if [[ {} = "Back" ]]; then
-                            echo "↩ Return to previous menu"
-                        else
-                            echo "Selected Packages:";
-                            echo {+} | tr " " "\n";
-                            echo;
-                            echo "Hovered Packages:";
-                            echo {} | tr " " "\n";
-                            echo;
-                            flatpak info {1}
-                        fi
-                ')
-                [ -z "$pkg" ] && continue
-                case "$pkg" in
-                    "Back") continue;;
-                    *)  inhibit_sleep "Uninstalling Package" \
-                        "Prevent shutdown/sleep during package uninstallation" \
-                        uninstallcommand
-                        return
-                        ;;
-                esac
-                ;;
-            Back) return;;
+                pkglistcommand='{ flatpak list --columns=application | grep -v "Application ID"; }'
+                pkglisthelper='flatpak info {1}'
+            ;;
+            Back)
+                return
+            ;;
+        esac
+
+        pkg=$( { printf "Back\n"; eval "$pkglistcommand";
+            } | \
+            fzf --multi \
+                --prompt="Search Packages: " \
+                --header="Use TAB to select, ENTER to Uninstall." \
+                --preview-window=wrap \
+                --preview '
+                    if [[ {} = "Back" ]]; then
+                        echo "↩ Return to previous menu"
+                    else
+                        echo "Selected Packages:";
+                        echo {+} | tr " " "\n";
+                        echo;
+                        echo "Hovered Packages:";
+                        echo {} | tr " " "\n";
+                        echo;
+                        '"$pkglisthelper"'
+                    fi
+        ')
+        [ -z "$pkg" ] && continue
+        case "$pkg" in
+            "Back") continue;;
+            *)  inhibit_sleep "Uninstalling Package" \
+                "Prevent shutdown/sleep during package uninstallation" \
+                uninstallcommand
+                return
+            ;;
         esac
     done
 }
