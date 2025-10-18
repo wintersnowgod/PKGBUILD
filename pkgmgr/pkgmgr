@@ -288,10 +288,6 @@ pkgtype() {
 }
 
 pkginstall() {
-    installcleanup() {
-        [ -n "$install_pid" ] && kill "$install_pid" 2>/dev/null
-        return
-    }
     while true; do
         
         pkgtype
@@ -343,7 +339,6 @@ pkginstall() {
         installpkg=$( { printf "Back\n"
                 { 
                     eval "$installpkglistcommand" 2>/dev/null & 
-                    install_pid=$!;
                 }
             } | \
             fzf --multi \
@@ -363,11 +358,11 @@ pkginstall() {
                         '"$installpkglisthelper"'
                     fi
         ')
-        [ -z "$installpkg" ] && { installcleanup; continue; }
+        [ -z "$installpkg" ] && continue; 
         case "$installpkg" in
-            "Back") installcleanup
+            "Back")
                     continue;;
-            *)  installcleanup
+            *)
                 inhibit_sleep "Installing Package" \
                 "Prevent shutdown/sleep during package installation" \
                 installcommand "$installpkg"
@@ -490,13 +485,6 @@ pkglist() {
 }
 
 pkgcheckupdates() {
-    checkupdatescleanup() {
-        for pid in "$check_pid1" "$check_pid2" "$check_pid3"; do
-            [ -n "$pid" ] && kill "$pid" 2>/dev/null
-        done
-        return
-    }
-
     while true; do
         case "$aur_helper" in
         "None")
@@ -510,17 +498,14 @@ pkgcheckupdates() {
         checkupdatespkg=$( { printf "Back\n"
                 {
                     checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' &
-                    check_pid1=$!
 
                     if [ "$aur_helper" != "None" ]; then
                         "$aur_helper" -Qua --devel 2>/dev/null &
-                        check_pid2=$!
                     fi
 
                     if command -v flatpak >/dev/null; then
                         flatpak remote-ls --updates --columns=application,version \
                             | grep -v "Application ID" 2>/dev/null &
-                        check_pid3=$!
                     fi
                 }
             } | \
@@ -535,12 +520,12 @@ pkgcheckupdates() {
                         '"$checkupdatespkglisthelper"'
                     fi
         ')
-        [ -z "$checkupdatespkg" ] && { checkupdatescleanup; return; }
+        [ -z "$checkupdatespkg" ] && return;
         case "$checkupdatespkg" in
-            "Back") checkupdatescleanup
+            "Back")
                     return
             ;;
-            *)      checkupdatescleanup
+            *)
                     copy_pkgnames "$checkupdatespkg"
                     continue_prompt_anykey
                     return
