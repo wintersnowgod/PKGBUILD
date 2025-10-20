@@ -57,14 +57,29 @@ if ! command -v pacman >/dev/null; then
 fi
 
 aursetup() {
+    force_aur_helper_cache_reset="$1"
     aurdetect() {
-        aur_helpers=()
+        aur_helper_cache_file="${XDG_CACHE_HOME:-$HOME/.cache}/aur_helper"
+        if [ "$force_aur_helper_cache_reset" != "--forcereset" ]; then
+            if [ -f "$aur_helper_cache_file" ]; then
+                saved_aur_helper=$(<"$aur_helper_cache_file")
+                if command -v "$saved_aur_helper" >/dev/null 2>&1; then
+                    aur_helper="$saved_aur_helper"
+                    return
+                fi
+            fi
+        fi
 
+        aur_helpers=()
         command -v yay >/dev/null 2>&1 && aur_helpers+=("yay")
         command -v paru >/dev/null 2>&1 && aur_helpers+=("paru")
 
         if [ ${#aur_helpers[@]} -eq 0 ]; then
             aur_helper="None"
+            echo "$aur_helper" > "$aur_helper_cache_file"
+        elif [ ${#aur_helpers[@]} -eq 1 ]; then
+            aur_helper="${aur_helpers[0]}"
+            echo "$aur_helper" > "$aur_helper_cache_file"
         else
             aur_helpers+=("None")
             aur_helper=$(printf "%s\n" "${aur_helpers[@]}" | \
@@ -75,7 +90,8 @@ aursetup() {
                     echo "Hovered Option:";
                     echo {}
             ')
-            [ -z "$aur_helper" ] && exit 1;
+            [ -z "$aur_helper" ] && echo "No selection made. Exiting." && exit 1
+            echo "$aur_helper" > "$aur_helper_cache_file"
         fi
     }
 
@@ -703,7 +719,7 @@ pkgmenu() {
             "List Orphan Packages") pkgorphans;;
             "Clean Packages") pkgclean;;
             "Generate devel Data For AUR Helpers") aurdeveldatagen;;
-            "Change AUR Helper") aursetup && continue;;
+            "Change AUR Helper") aursetup --forcereset && continue;;
             "Exit") break;;
         esac
     done
