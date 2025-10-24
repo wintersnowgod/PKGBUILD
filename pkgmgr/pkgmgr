@@ -232,7 +232,7 @@ uninstallcommand() {
                 )
                 repo_uninstall_status=$?
                 if [[ $repo_uninstall_status -eq 0 ]]; then
-                    print_done "Successfully Unnstalled Packages"
+                    print_done "Successfully Uninstalled Packages"
                 elif [[ $repo_uninstall_status -eq 130 ]]; then
                     print_error "Package Uninstall interrupted"
                 else
@@ -248,7 +248,7 @@ uninstallcommand() {
                 )
                 aur_uninstall_status=$?
                 if [[ $aur_uninstall_status -eq 0 ]]; then
-                    print_done "Successfully Unnstalled Packages"
+                    print_done "Successfully Uninstalled Packages"
                 elif [[ $aur_uninstall_status -eq 130 ]]; then
                     print_error "Package Uninstall interrupted"
                 else
@@ -258,18 +258,60 @@ uninstallcommand() {
         ;;
         Flatpak)
                 print_msg "Uninstalling Packages..."
+                flatpak_failed_uninstall_status_file=$(mktemp)
+                echo "0" > "$flatpak_failed_uninstall_status_file"
                 (
                     trap 'pkill sudo; exit 130' INT
-                    echo "$1" | xargs -ro flatpak uninstall --assumeyes
-                    flatpak uninstall --unused
+                    mapfile -t flatpak_uninstall_apps <<< "$1"
+                    flatpak_uninstall_success_apps=()
+                    failed_status=0
+                    for flatpak_uninstall_app in "${flatpak_uninstall_apps[@]}"; do
+                        [[ -z "$flatpak_uninstall_app" ]] && continue
+                        print_msg "Uninstalling $flatpak_uninstall_app..."
+                        flatpak uninstall --assumeyes "$flatpak_uninstall_app"
+                        flatpak_uninstall_app_status=$?
+                        if [[ $flatpak_uninstall_app_status -eq 0 ]]; then
+                            print_done "$flatpak_uninstall_app uninstalled successfully"
+                            flatpak_uninstall_success_apps+=("$flatpak_uninstall_app")
+                        else
+                            print_error "Failed to uninstall $flatpak_uninstall_app"
+                            ((failed_status++))
+                        fi
+                    done
+
+                    echo "$failed_status" > "$flatpak_failed_uninstall_status_file"
+                    
+                    if ((${#flatpak_uninstall_success_apps[@]})); then
+                        for flatpak_uninstall_success_app in "${flatpak_uninstall_success_apps[@]}"; do
+                            flatpak_data_dir="$HOME/.var/app/$flatpak_uninstall_success_app"
+                            if [[ -d "$flatpak_data_dir" ]]; then
+                                print_warn "App data found for $flatpak_uninstall_success_app"
+                                print_msg "Do you want to remove app data for '$flatpak_uninstall_success_app'? (y/N): "
+                                read -r ans < /dev/tty
+                                if [[ "$ans" =~ ^[Yy]$ ]]; then
+                                    echo "Deleting app data: $flatpak_data_dir"
+                                    rm -rf -- "$flatpak_data_dir"
+                                    print_done "App data removed for $flatpak_uninstall_success_app"
+                                else
+                                    print_msg "App data retained for $flatpak_uninstall_success_app"
+                                fi
+                            else
+                                print_warn "No app data found for $flatpak_uninstall_success_app"
+                            fi
+                        done
+                    fi
                 )
                 flatpak_uninstall_status=$?
-                if [[ $flatpak_uninstall_status -eq 0 ]]; then
-                    print_done "Successfully Unnstalled Packages"
-                elif [[ $flatpak_uninstall_status -eq 130 ]]; then
-                    print_error "Package Uninstall interrupted"
+                
+                flatpak_failed_uninstall_status=$(<"$flatpak_failed_uninstall_status_file")
+                rm -f "$flatpak_failed_uninstall_status_file"
+                
+                if [[ $flatpak_uninstall_status -eq 130 ]]; then
+                    print_error "Package Uninstall interrupted.. Failed to Uninstall $flatpak_failed_uninstall_status Packages"
+                elif [[ $flatpak_failed_uninstall_status -eq 0 ]]; then
+                    print_done "Successfully Uninstalled all Packages"
                 else
-                    print_error "Failed to Uninstall Packages"
+                    print_error "Failed to Uninstall $flatpak_failed_uninstall_status Packages"
                 fi
                 continue_prompt_anykey
         ;;
