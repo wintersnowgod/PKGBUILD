@@ -1,0 +1,21 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=tailscale-rules
+pkgver=1
+pkgrel=1
+pkgdesc="Rule to enable ipv6 for tailscale."
+arch=('any')
+depends=( "tailscale" "ethtool" "bash" )
+source=("99-tailscale.conf"
+        "set-tailscale-udp-gro.sh"
+        "tailscale-udp-gro.service")
+sha256sums=('cf5bdce2ce87b5054042a70d8630f40a0f991c64c42786824f660245b943d2be'
+            '6ef54be8af4e720bf384cf899965044f85c830941b8f728dcb696edbc77c1743'
+            'b2b840c34c0c46809d1cdd7be10b0d1814d459a35182166bb8e1a990599b3f17')
+install=${pkgname}.install
+
+package() {
+  install -Dm644 "${srcdir}/99-tailscale.conf" "${pkgdir}/etc/sysctl.d/99-tailscale.conf"
+  install -Dm644 "${srcdir}/set-tailscale-udp-gro.sh" "${pkgdir}/usr/local/bin/set-tailscale-udp-gro.sh"
+  chmod +x "${pkgdir}/usr/local/bin/set-tailscale-udp-gro.sh"
+  install -Dm644 "${srcdir}/tailscale-udp-gro.service" "${pkgdir}/etc/systemd/system/tailscale-udp-gro.service"
+}

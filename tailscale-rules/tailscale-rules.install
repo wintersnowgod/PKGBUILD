@@ -1,0 +1,16 @@
+post_install() {
+  echo
+  echo -e "=> Enabling tailscale-udp-gro.service"
+  sudo systemctl enable --now tailscale-udp-gro.service
+}
+
+post_remove() {
+  echo
+  echo -e "=> Disabling tailscale-udp-gro.service"
+  sudo systemctl disable --now tailscale-udp-gro.service
+}
+
+post_upgrade() {
+  post_remove "$@"
+  post_install "$@"
+}

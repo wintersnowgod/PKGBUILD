@@ -1,0 +1,12 @@
+[Unit]
+Description=Configure GRO and UDP offload on NIC
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/set-tailscale-udp-gro.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
