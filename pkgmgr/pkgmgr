@@ -775,7 +775,7 @@ pkgmenu() {
             "Check Updates") pkgcheckupdates;;
             "Update System") inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" pkgupdate;;
             "List Packages") pkglist;;
-            "List Orphan Packages") pkgorphans;;
+            "List Orphan Packages") pkgchoice="Orphan" && pkgorphans;;
             "Clean Packages") pkgclean;;
             "Generate devel Data For AUR Helpers") aurdeveldatagen;;
             "Change AUR Helper") aursetup --forcereset && continue;;
