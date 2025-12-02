@@ -681,7 +681,7 @@ pkgupdate() {
         continue_prompt_anykey
     }
 
-    mainupdate
+    inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" mainupdate
 }
 
 aurdeveldatagen() {
@@ -773,7 +773,7 @@ pkgmenu() {
             "Install Packages") pkginstall;;
             "Uninstall Packages") pkguninstall;;
             "Check Updates") pkgcheckupdates;;
-            "Update System") inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" pkgupdate;;
+            "Update System") pkgupdate;;
             "List Packages") pkglist;;
             "List Orphan Packages") pkgchoice="Orphan" && pkgorphans;;
             "Clean Packages") pkgclean;;
