@@ -315,6 +315,23 @@ uninstallcommand() {
                 fi
                 continue_prompt_anykey
         ;;
+        "Orphan")
+                print_msg "Uninstalling Packages..."
+                (
+                    trap 'pkill sudo; exit 130' INT
+                    echo "$1" | xargs -ro sudo pacman -Rns --noconfirm
+                )
+                repo_uninstall_status=$?
+                if [[ $repo_uninstall_status -eq 0 ]]; then
+                    print_done "Successfully Uninstalled Packages"
+                elif [[ $repo_uninstall_status -eq 130 ]]; then
+                    print_error "Package Uninstall interrupted"
+                else
+                    print_error "Failed to Uninstall Packages"
+                fi
+                continue_prompt_anykey
+        ;;
+
     esac
 }
 
