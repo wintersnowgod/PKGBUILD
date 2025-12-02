@@ -750,7 +750,7 @@ pkgmenu() {
                 fi
             } | \
             fzf --prompt="Search: " \
-                --header="Select Operation: " \
+                --header="Select Operation:       ctrl+u to Update System" \
                 --preview-window=wrap \
                 --preview '
                     fastfetch;
@@ -764,8 +764,9 @@ pkgmenu() {
                     echo;
                     if [[ {} = "Exit" ]]; then
                         echo "↩ Exit the Manager"
-                    fi
-        ')
+                    fi' \
+                --bind "ctrl-u:execute(bash -c 'colors; aursetup; pkgupdate')"
+                )
 
         [ -z "$pkgmanager" ] && return
 
