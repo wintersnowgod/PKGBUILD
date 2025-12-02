@@ -783,5 +783,7 @@ pkgmenu() {
         esac
     done
 }
-
+for fn in $(declare -F | awk '{print $3}'); do
+    export -f "$fn"
+done
 pkgmenu
