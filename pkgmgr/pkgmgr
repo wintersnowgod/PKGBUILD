@@ -108,6 +108,8 @@ aursetup() {
                                     --answerclean All
                                     --answerdiff None
                                     --noremovemake
+                                    --redownload
+                                    --rebuild
                                     --cleanafter
                                     --sudoloop
                                     --noconfirm
