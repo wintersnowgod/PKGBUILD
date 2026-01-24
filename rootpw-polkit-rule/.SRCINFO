@@ -1,0 +1,10 @@
+pkgbase = rootpw-polkit-rule
+	pkgdesc = Rule to use rootpw in all polkit promtps.
+	pkgver = 1
+	pkgrel = 1
+	arch = any
+	depends = polkit
+	source = 49-rootpw_global.rules
+	sha256sums = a9213b29096a01697a2d30a9d24f5d484ec7817375ec9ee69a3876d07409073d
+
+pkgname = rootpw-polkit-rule

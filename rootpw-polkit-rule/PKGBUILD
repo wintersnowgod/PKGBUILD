@@ -1,0 +1,14 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=rootpw-polkit-rule
+pkgver=1
+pkgrel=1
+pkgdesc="Rule to use rootpw in all polkit promtps."
+arch=('any')
+depends=('polkit')
+source=("49-rootpw_global.rules")
+sha256sums=('a9213b29096a01697a2d30a9d24f5d484ec7817375ec9ee69a3876d07409073d')
+
+package() {
+  install -d -m750 "$pkgdir/etc/polkit-1/rules.d"
+  install -Dm644 "${srcdir}/49-rootpw_global.rules" "${pkgdir}/etc/polkit-1/rules.d/49-rootpw_global.rules"
+}
