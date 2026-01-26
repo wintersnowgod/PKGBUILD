@@ -11,7 +11,7 @@ pkgbase = tailscale-rules
 	source = set-tailscale-udp-gro.sh
 	source = tailscale-udp-gro.service
 	sha256sums = cf5bdce2ce87b5054042a70d8630f40a0f991c64c42786824f660245b943d2be
-	sha256sums = 6ef54be8af4e720bf384cf899965044f85c830941b8f728dcb696edbc77c1743
+	sha256sums = 9150401a40110b8cc23c1810d32d1d978298ccdad6dd8f2e08ffcb373b2fc994
 	sha256sums = b2b840c34c0c46809d1cdd7be10b0d1814d459a35182166bb8e1a990599b3f17
 
 pkgname = tailscale-rules

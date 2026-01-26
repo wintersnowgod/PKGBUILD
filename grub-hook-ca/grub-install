@@ -8,7 +8,7 @@ if [[ -f /boot/EFI/BOOT/BOOTX64.EFI ]]; then
     /usr/bin/grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock --removable
   fi
 else
-    /usr/bin/grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock --removable
+  /usr/bin/grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock --removable
 fi
 # create config
 /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg

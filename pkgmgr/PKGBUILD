@@ -6,11 +6,11 @@ pkgdesc="A simple package manager for arch linux using fzf."
 arch=('any')
 depends=('bash' 'fzf' 'pacman-contrib')
 optdepends=('xclip: For X11 copy to clipboard'
-            'wl-copy: For Wayland Copy to clipboard')
+  'wl-copy: For Wayland Copy to clipboard')
 source=("pkgmgr"
-        "pkgmgr.desktop")
-sha256sums=('71bb7673609373384f3a225fb4ce831946e14f6096bd516ebb233d41eaa87d78'
-            '93caa3f225a3e191b5c2534303c711ea586a95898a741f7fbc3300a5e8cc0c11')
+  "pkgmgr.desktop")
+sha256sums=('27a53bede08636eb7f629869c217c06d7f60d6b699b031a3bd3b250b323c70ba'
+  '93caa3f225a3e191b5c2534303c711ea586a95898a741f7fbc3300a5e8cc0c11')
 
 package() {
   install -Dm644 "${srcdir}/pkgmgr" "${pkgdir}/usr/bin/pkgmgr"
