@@ -701,24 +701,30 @@ pkgupdate() {
 
 aurdeveldatagen() {
   print_msg "Generating data for Devel Packages eg:- \"-git\" Packages"
-  "$aur_helper" "${aurdeveldatagen_flags[@]}"
+  (
+    trap 'exit 130' INT
+    "$aur_helper" "${aurdeveldatagen_flags[@]}"
+  )
   continue_prompt_anykey
   return
 }
 
 pkgclean() {
   print_msg "Cleaning Package Cache"
-  if [[ "$aur_helper" = "None" ]]; then
-    yes | sudo pacman -Scc
-    if command -v flatpak >/dev/null; then
-      flatpak uninstall --unused
+  (
+    trap 'exit 130' INT
+    if [[ "$aur_helper" = "None" ]]; then
+      yes | sudo pacman -Scc
+      if command -v flatpak >/dev/null; then
+        flatpak uninstall --unused
+      fi
+    else
+      yes | "$aur_helper" "${cleanpkg_flags[@]}"
+      if command -v flatpak >/dev/null; then
+        flatpak uninstall --unused
+      fi
     fi
-  else
-    yes | "$aur_helper" "${cleanpkg_flags[@]}"
-    if command -v flatpak >/dev/null; then
-      flatpak uninstall --unused
-    fi
-  fi
+  )
   continue_prompt_anykey
   return
 }
