@@ -1,0 +1,32 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=sp-flash-tool-v5
+pkgver=5.2228
+pkgrel=1
+pkgdesc="A Flash Tool for MediaTek (MTK) devices"
+arch=('any')
+url="https://spflashtools.com"
+license=('noidea')
+source=("https://spflashtools.com/wp-content/uploads/SP_Flash_Tool_v${pkgver}_Linux.zip"
+  "${pkgname}.desktop"
+  "spflashtoolv5"
+  "${pkgname}.svg")
+sha256sums=('18b11eed341fd57feb7fbc58a7b8eb93429bacc7d25a993878af8a0b6e98df10'
+  '3c1b456568932fc602fd0b9a1690a646f7eba22ed5e4993b83bb881fcd43f6a2'
+  '880ce98246a19f349eefad4bfff747a321133c778d6dd760a256670a43ede3df'
+  '6af709e6bce410cccffe463d94750e20e8a0bec02755f075d43384941a46cb9d')
+install=${pkgname}.install
+_filename="SP_Flash_Tool_v${pkgver}_Linux.zip"
+options=('!strip')
+
+package() {
+  install -d "${pkgdir}/opt"
+  cp -a "${srcdir}/${_filename%.*}" "${pkgdir}/opt/${pkgname}"
+  install -Dm644 "${srcdir}/${_filename%.*}/99-ttyacms.rules" "${pkgdir}/usr/lib/udev/rules.d/99-ttyacms-v5.rules"
+  install -d "${pkgdir}/usr/bin"
+  install -Dm644 "${srcdir}/spflashtoolv5" "${pkgdir}/usr/bin/spflashtoolv5"
+  install -Dm644 "${srcdir}/sp-flash-tool-v5.desktop" "${pkgdir}/usr/share/applications/sp-flash-tool-v5.desktop"
+  chmod +x "${pkgdir}/usr/bin/spflashtoolv5"
+  chmod +x "${pkgdir}/opt/${pkgname}/flash_tool.sh"
+  chmod +x "${pkgdir}/opt/${pkgname}/flash_tool"
+  install -Dm644 "$srcdir/${pkgname}.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/${pkgname}.svg"
+}

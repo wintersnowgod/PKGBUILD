@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+cd "/opt/sp-flash-tool-v5" || exit
+./flash_tool.sh

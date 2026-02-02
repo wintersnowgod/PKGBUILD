@@ -1,0 +1,10 @@
+[Desktop Entry]
+Categories=Development;
+Comment=Flash Tool for MediaTek devices
+Keywords=flash;sp;mtk;firmware;rom;
+Exec=spflashtoolv5
+StartupWMClass=sp-flash-tool-v5
+Icon=sp-flash-tool-v5
+Name=SP Flash Tool V5
+Terminal=false
+Type=Application
