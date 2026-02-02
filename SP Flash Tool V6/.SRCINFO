@@ -1,0 +1,17 @@
+pkgbase = sp-flash-tool-v6
+	pkgdesc = A Flash Tool for MediaTek (MTK) devices
+	pkgver = 6.2228
+	pkgrel = 1
+	url = https://spflashtools.com
+	install = sp-flash-tool-v6.install
+	arch = any
+	license = noidea
+	options = !strip
+	source = https://spflashtools.com/wp-content/uploads/SP_Flash_Tool_v6.2228_Linux.zip
+	source = sp-flash-tool-v6.desktop
+	source = spflashtoolv6
+	sha256sums = 1f063c41bb199e39e0b22082a0a369f3078e2fcd048af7aba02f0d9b5d06ba64
+	sha256sums = 9eb2aa9001f90a4b2daa4cc3eea72d9a6295cfa8e8ac576bef6f1c6df0f2bd40
+	sha256sums = 7567ecf3c5121e7eedea3d9bf5ddc6c98a9478aa3f6a8ca9c080c6a5b991109b
+
+pkgname = sp-flash-tool-v6
