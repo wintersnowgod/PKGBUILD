@@ -1,0 +1,13 @@
+pkgbase = kwin-scripts-fluid-tile
+	pkgdesc = A script for Kwin that auto adjusts windows to the custom KDE Plasma tiling layout by creating and removing virtual desktops.
+	pkgver = 5.2
+	pkgrel = 1
+	url = https://codeberg.org/Serroda/fluid-tile
+	arch = any
+	license = unknown
+	makedepends = kpackage
+	depends = kwin
+	source = https://codeberg.org/Serroda/fluid-tile/archive/v5.2-RC2.tar.gz
+	sha256sums = 7f81e710fa33fce00d12a43ec8e09a3ef29f1312c841ebbf10866fbd7379a73c
+
+pkgname = kwin-scripts-fluid-tile

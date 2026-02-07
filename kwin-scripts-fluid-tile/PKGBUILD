@@ -1,0 +1,18 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=kwin-scripts-fluid-tile
+_pkgname=fluid-tile
+pkgver=5.2
+pkgrel=1
+pkgdesc="A script for Kwin that auto adjusts windows to the custom KDE Plasma tiling layout by creating and removing virtual desktops."
+arch=('any')
+url="https://codeberg.org/Serroda/fluid-tile"
+license=('unknown')
+depends=('kwin')
+makedepends=('kpackage')
+source=("${url}/archive/v${pkgver}-RC2.tar.gz")
+sha256sums=('7f81e710fa33fce00d12a43ec8e09a3ef29f1312c841ebbf10866fbd7379a73c')
+
+package() {
+  cd "${_pkgname}"
+  kpackagetool6 --type=KWin/Script -p ${pkgdir}/usr/share/kwin/scripts -i ${srcdir}/${_pkgname}
+}
