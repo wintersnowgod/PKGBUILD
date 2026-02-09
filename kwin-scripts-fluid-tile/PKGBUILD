@@ -9,7 +9,7 @@ url="https://codeberg.org/Serroda/fluid-tile"
 license=('unknown')
 depends=('kwin')
 makedepends=('kpackage')
-source=("${url}/archive/v${pkgver}-RC2.tar.gz")
+source=("${url}/archive/v${pkgver}.tar.gz")
 sha256sums=('7f81e710fa33fce00d12a43ec8e09a3ef29f1312c841ebbf10866fbd7379a73c')
 
 package() {

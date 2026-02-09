@@ -7,7 +7,7 @@ pkgbase = kwin-scripts-fluid-tile
 	license = unknown
 	makedepends = kpackage
 	depends = kwin
-	source = https://codeberg.org/Serroda/fluid-tile/archive/v5.2-RC2.tar.gz
+	source = https://codeberg.org/Serroda/fluid-tile/archive/v5.2.tar.gz
 	sha256sums = 7f81e710fa33fce00d12a43ec8e09a3ef29f1312c841ebbf10866fbd7379a73c
 
 pkgname = kwin-scripts-fluid-tile
