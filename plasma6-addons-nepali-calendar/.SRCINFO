@@ -1,0 +1,18 @@
+pkgbase = plasma6-applets-nepali-calendar
+	pkgdesc = Nepali Calendar — A KDE Plasma widget (plasmoid) displaying the Nepali Bikram Sambat calendar with month navigation and panel integration.
+	pkgver = 1.2.0
+	pkgrel = 1
+	url = https://github.com/SATYADAHAL/nepali-calendar
+	arch = any
+	license = GPL-3.0-only
+	makedepends = kpackage
+	depends = qt6-declarative
+	depends = libplasma
+	depends = kirigami
+	provides = plasma6-applets-nepali-calendar
+	conflicts = plasma6-applets-nepali-calendar-bin
+	conflicts = plasma6-applets-nepali-calendar-git
+	source = nepali-calendar-1.2.0.tar.gz::https://github.com/SATYADAHAL/nepali-calendar/archive/refs/tags/v1.2.0.tar.gz
+	sha256sums = b2194ffb066b38f78adc9b89a8d995dd859935280f815188a730410dbb4f06db
+
+pkgname = plasma6-applets-nepali-calendar
