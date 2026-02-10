@@ -1,0 +1,20 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+_pkgname=docker-companion
+pkgname=plasma6-applets-docker-companion
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="A docker companion right in your system tray - KDE plasma 6 plasmoid."
+arch=('any')
+url="https://github.com/results-may-vary-org/docker-companion"
+provides=('plasma6-applets-docker-companion')
+conflicts=('plasma6-applets-docker-companion-bin' 'plasma6-applets-docker-companion-git')
+license=('GPL-3.0-only')
+depends=('kcoreaddons' 'libplasma' 'plasma-nm' 'plasma5support' 'kirigami' 'plasma-workspace' 'ksvg' 'qt6-declarative' 'kcmutils' 'kdeclarative')
+makedepends=('kpackage')
+source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('5b169cf370b20c305e086af4d4013dcfe4536d8acdd6235b13e415e9769a39a8')
+
+package() {
+  kpackagetool6 --type=Plasma/Applet -p ${pkgdir}/usr/share/plasma/plasmoids/ -i ${srcdir}/${_pkgname}-${pkgver}/a2n.docker.plasmoid
+  install -Dm644 "${srcdir}/${_pkgname}-${pkgver}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

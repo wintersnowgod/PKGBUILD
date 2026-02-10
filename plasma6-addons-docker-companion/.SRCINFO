@@ -1,0 +1,25 @@
+pkgbase = plasma6-applets-docker-companion
+	pkgdesc = A docker companion right in your system tray - KDE plasma 6 plasmoid.
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/results-may-vary-org/docker-companion
+	arch = any
+	license = GPL-3.0-only
+	makedepends = kpackage
+	depends = kcoreaddons
+	depends = libplasma
+	depends = plasma-nm
+	depends = plasma5support
+	depends = kirigami
+	depends = plasma-workspace
+	depends = ksvg
+	depends = qt6-declarative
+	depends = kcmutils
+	depends = kdeclarative
+	provides = plasma6-applets-docker-companion
+	conflicts = plasma6-applets-docker-companion-bin
+	conflicts = plasma6-applets-docker-companion-git
+	source = docker-companion-1.0.0.tar.gz::https://github.com/results-may-vary-org/docker-companion/archive/refs/tags/v1.0.0.tar.gz
+	sha256sums = 5b169cf370b20c305e086af4d4013dcfe4536d8acdd6235b13e415e9769a39a8
+
+pkgname = plasma6-applets-docker-companion
