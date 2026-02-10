@@ -7,9 +7,9 @@ pkgdesc="A script for Kwin that auto adjusts windows to the custom KDE Plasma ti
 arch=('any')
 url="https://codeberg.org/Serroda/fluid-tile"
 license=('unknown')
-depends=('kwin')
+depends=('kwin' 'qt6-declarative')
 makedepends=('kpackage')
-source=("${url}/archive/v${pkgver}.tar.gz")
+source=("${_pkgname}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
 sha256sums=('7f81e710fa33fce00d12a43ec8e09a3ef29f1312c841ebbf10866fbd7379a73c')
 
 package() {
