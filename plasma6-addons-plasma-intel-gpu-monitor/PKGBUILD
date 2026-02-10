@@ -1,0 +1,40 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+_pkgname=plasma-intel-gpu-monitor
+pkgname=plasma6-applets-plasma-intel-gpu-monitor
+pkgver=0.3.2
+pkgrel=1
+pkgdesc="KDE Plasma Widget that displays Intel GPU usage including whether or not video acceleration is being used."
+arch=('any')
+url="https://github.com/luisbocanegra/plasma-intel-gpu-monitor"
+provides=('plasma6-applets-plasma-intel-gpu-monitor')
+conflicts=('plasma6-applets-plasma-intel-gpu-monitor-bin' 'plasma6-applets-plasma-intel-gpu-monitor-git')
+license=('GPL-3.0-only')
+depends=('kirigami' 'plasma5support' 'ksvg' 'kcmutils' 'libplasma' 'plasma-workspace' 'qt6-declarative' 'intel-gpu-tools')
+makedepends=('cmake' 'extra-cmake-modules' 'zip')
+source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"
+  "setcap_intel_gpu_top.service"
+  "99-sysctl-paranoid.conf")
+sha256sums=('22738816f6d9ad463529e433adb0e02fcd2b9185510f00cd68a320fd1bf24925'
+  'bac6f95b1566d86de3f829207940505230a96824470a0b812c7f6405c7e42771'
+  '149b9569ca9bcb9545b54df2d12e2d69d53db14ec0737bdc2042f478b96bee37')
+install=${_pkgname}.install
+
+prepare() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+  if [ -d "build" ]; then
+    rm -rf build
+  fi
+}
+
+build() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+  cmake -B build -S . -DBUILD_PLUGIN=OFF -DCMAKE_INSTALL_PREFIX="/usr"
+  cmake --build build
+}
+package() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+  DESTDIR="${pkgdir}" cmake --install build
+  install -Dm644 "${srcdir}/setcap_intel_gpu_top.service" "${pkgdir}/usr/lib/systemd/system/setcap_intel_gpu_top.service"
+  install -Dm644 "${srcdir}/99-sysctl-paranoid.conf" "${pkgdir}/etc/sysctl.d/99-sysctl-paranoid.conf"
+  install -Dm644 "${srcdir}/${_pkgname}-${pkgver}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

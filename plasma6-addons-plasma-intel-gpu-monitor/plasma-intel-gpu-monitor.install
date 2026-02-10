@@ -7,5 +7,8 @@ post_remove() {
 }
 
 post_upgrade() {
-  sudo systemctl restart setcap_intel_gpu_top.service
+  sudo systemctl daemon-reload
+  post_remove
+  post_install
+  echo -e "\nRestart Plasma Shell to view the updated plasmoid.\n"
 }
