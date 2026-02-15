@@ -1,0 +1,22 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=diun-notif
+pkgver=1
+pkgrel=1
+pkgdesc="Script required for notification for diun."
+arch=('any')
+url="https://github.com/wintersnowgod/PKGBUILD"
+license=('GPL')
+depends=('python' 'python-dbus')
+source=('diun-notif.py'
+  'diun-notif.desktop')
+sha256sums=('a9fcb9c49df909d4ed8f517b5bbe5c4e0b0d6826bd4d2f7b9438b00a3b5ca6a4'
+            'd97b266fd13750a9acee8e59a00e2f0fada7c009fea00742cbe92aa6a110e37c')
+
+package() {
+  mkdir -p ${pkgdir}/usr/bin
+  install -Dm 755 ${srcdir}/diun-notif.py ${pkgdir}/usr/bin/diun-notif.py
+  mkdir -p ${pkgdir}/usr/share/applications
+  mkdir -p ${pkgdir}/etc/xdg/autostart
+  install -Dm 644 ${srcdir}/diun-notif.desktop ${pkgdir}/usr/share/applications/diun-notif.desktop
+  install -Dm 644 ${srcdir}/diun-notif.desktop ${pkgdir}/etc/xdg/autostart/diun-notif.desktop
+}

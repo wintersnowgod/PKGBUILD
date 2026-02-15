@@ -1,0 +1,15 @@
+pkgbase = diun-notif
+	pkgdesc = Script required for notification for diun.
+	pkgver = 1
+	pkgrel = 1
+	url = https://github.com/wintersnowgod/PKGBUILD
+	arch = any
+	license = GPL
+	depends = python
+	depends = python-dbus
+	source = diun-notif.py
+	source = diun-notif.desktop
+	sha256sums = a9fcb9c49df909d4ed8f517b5bbe5c4e0b0d6826bd4d2f7b9438b00a3b5ca6a4
+	sha256sums = d97b266fd13750a9acee8e59a00e2f0fada7c009fea00742cbe92aa6a110e37c
+
+pkgname = diun-notif

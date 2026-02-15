@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=DIUN
+Comment=Docker Image Update Notifier
+Exec=python3 /usr/bin/diun-notif.py
+Icon=docker-desktop
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+
