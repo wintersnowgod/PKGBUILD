@@ -1,0 +1,28 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+_pkgname=kde_modernclock
+# pkgname=plasma6-applets-kde_modernclock
+pkgname=plasma6-applets-kde_modernclock-git
+pkgver=r22.5c86f0f
+pkgrel=1
+pkgdesc="A modern looking clock widget for KDE Plasma! Written entirely in QML and Javascript, this clock makes your desktop look aesthetic! Inspired by the popular rainmeter skin "Mond"."
+arch=('any')
+url="https://github.com/prayag2/kde_modernclock"
+provides=('plasma6-applets-kde_modernclock')
+conflicts=('plasma6-applets-kde_modernclock-bin' 'plasma6-applets-kde_modernclock')
+license=('GPL-3.0-only')
+depends=('kirigami' 'libplasma' 'qt6-declarative' 'plasma5support' 'kdeclarative')
+makedepends=('kpackage' 'git')
+source=("${_pkgname}::git+${url}.git")
+sha256sums=('SKIP')
+# source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/${pkgver}.tar.gz")
+# sha256sums=('52b1ec6d7d188e4b1f6f83056bdfe9464ef0d1511927b74f3c61b6a626ccda1c')
+
+pkgver() {
+  cd "${_pkgname}"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  kpackagetool6 --type=Plasma/Applet -p ${pkgdir}/usr/share/plasma/plasmoids/ -i ${srcdir}/${_pkgname}/package
+  install -Dm644 "${srcdir}/${_pkgname}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
