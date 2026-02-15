@@ -6,6 +6,6 @@ pkgdesc="Dependencies required for apdatifier."
 arch=('any')
 url="https://github.com/exequtic/apdatifier"
 license=('GPL')
-depends=('jq' 'pacman-contrib' 'fzf' 'tmux')
+depends=('jq' 'fzf' 'tmux')
 optdepends=('paru: AUR Helper'
-            'yay: AUR Helper')
+  'yay: AUR Helper')
