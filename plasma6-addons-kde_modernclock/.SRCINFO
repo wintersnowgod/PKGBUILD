@@ -1,12 +1,11 @@
-pkgbase = plasma6-applets-kde_modernclock-git
+pkgbase = plasma6-applets-kde_modernclock
 	pkgdesc = A modern looking clock widget for KDE Plasma! Written entirely in QML and Javascript, this clock makes your desktop look aesthetic! Inspired by the popular rainmeter skin Mond.
-	pkgver = r22.5c86f0f
+	pkgver = 1.0.0
 	pkgrel = 1
 	url = https://github.com/prayag2/kde_modernclock
 	arch = any
 	license = GPL-3.0-only
 	makedepends = kpackage
-	makedepends = git
 	depends = kirigami
 	depends = libplasma
 	depends = qt6-declarative
@@ -14,8 +13,8 @@ pkgbase = plasma6-applets-kde_modernclock-git
 	depends = kdeclarative
 	provides = plasma6-applets-kde_modernclock
 	conflicts = plasma6-applets-kde_modernclock-bin
-	conflicts = plasma6-applets-kde_modernclock
-	source = kde_modernclock::git+https://github.com/prayag2/kde_modernclock.git
-	sha256sums = SKIP
+	conflicts = plasma6-applets-kde_modernclock-git
+	source = modernclock-1.0.0.tar.gz::https://github.com/prayag2/kde_modernclock/raw/refs/heads/main/archives/modernclock-1.0.0.tar.gz
+	sha256sums = c58c586b96c9e61681e707dd2c1ad0cec591cca0ae78363ad6980f435a7db186
 
-pkgname = plasma6-applets-kde_modernclock-git
+pkgname = plasma6-applets-kde_modernclock
