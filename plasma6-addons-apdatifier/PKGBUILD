@@ -1,0 +1,40 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+_pkgname=apdatifier
+pkgname=plasma6-applets-apdatifier
+pkgver=2.9.7.1
+pkgrel=1
+pkgdesc="KDE Plasma widget that tracks updates for ArchLinux, Plasma Widgets, and Flatpak, providing notifications for new ones."
+arch=('any')
+url="https://github.com/exequtic/apdatifier"
+provides=('plasma6-applets-apdatifier')
+conflicts=('plasma6-applets-apdatifier-bin' 'plasma6-applets-apdatifier-git')
+license=('MIT')
+depends=('kitemmodels' 'ksvg' 'qt6-declarative' 'libplasma' 'kirigami' 'knotifications' 'plasma5support' 'kcmutils' 'kdeclarative' 'kiconthemes' 'qt6-5compat' 'bash')
+makedepends=('kpackage')
+optdepends=('yay: For AUR updates support'
+  'paru: For AUR updates support'
+  'pikaur: For AUR updates support'
+  'flatpak: For Flatpak updates support'
+  'fwupd: For Firmware updates support'
+  'jq: For KDE Widgets updates and News'
+  'tmux: For upgrade and management in a terminal multiplexer'
+  'fzf: For interactive package selection in management')
+source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/${pkgver}.tar.gz")
+sha256sums=('eb34723147e157e050583d0186081ce6955103715815addae088c7da3b82a0f6')
+
+build() {
+  local base="${srcdir}/${_pkgname}-${pkgver}/package"
+  local dir="${base}/translate"
+
+  pushd -- "$dir" >/dev/null || return 1
+  ./build >/dev/null
+  popd >/dev/null || true
+
+  rm -rf -- "$dir"
+}
+
+package() {
+  _path="$pkgdir/usr/share/plasma/plasmoids/com.github.exequtic.apdatifier"
+  mkdir -p "$_path"
+  cp -r "$srcdir/${_pkgname}-${pkgver}/package"/* "$_path"
+}
