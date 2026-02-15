@@ -1,6 +1,5 @@
 # Maintainer: wintersnowgod <git.xerox732@passinbox.com>
 _pkgname=kde_modernclock
-# pkgname=plasma6-applets-kde_modernclock
 pkgname=plasma6-applets-kde_modernclock-git
 pkgver=r22.5c86f0f
 pkgrel=1
@@ -14,8 +13,6 @@ depends=('kirigami' 'libplasma' 'qt6-declarative' 'plasma5support' 'kdeclarative
 makedepends=('kpackage' 'git')
 source=("${_pkgname}::git+${url}.git")
 sha256sums=('SKIP')
-# source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/${pkgver}.tar.gz")
-# sha256sums=('52b1ec6d7d188e4b1f6f83056bdfe9464ef0d1511927b74f3c61b6a626ccda1c')
 
 pkgver() {
   cd "${_pkgname}"
