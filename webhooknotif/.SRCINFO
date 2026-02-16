@@ -1,0 +1,15 @@
+pkgbase = webhooknotif
+	pkgdesc = A python script for monitoring webserver for webhook notification.
+	pkgver = 1
+	pkgrel = 1
+	url = https://github.com/wintersnowgod/PKGBUILD
+	arch = any
+	license = GPL
+	depends = python
+	depends = python-dbus
+	source = webhooknotif.py
+	source = com.github.wintersnowgod.webhooknotif.desktop
+	sha256sums = 11f129fd08467ac213b291c2dc6d3454b9e524e37e0eed580b082d08e3015238
+	sha256sums = 69f33a7dd3e690e5bbfe95c07be53943384a0e9ea9be07afd196604765ad2b04
+
+pkgname = webhooknotif
