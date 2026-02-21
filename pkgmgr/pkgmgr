@@ -136,15 +136,12 @@ inhibit_sleep() {
     local who="$1"
     local why="$2"
     shift 2
-    setsid systemd-inhibit --what=shutdown:sleep \
+    systemd-inhibit --what=shutdown:sleep \
       --who="$who" \
       --why="$why" \
-      sleep infinity >/dev/null 2>&1 &
-    local inhibit_pid=$!
-    "$@"
-    kill "$inhibit_pid" 2>/dev/null
+      "$@"
   else
-    print_warn "\"systemd-inhibit\" command not found. Unable to Inhibit Sleep."
+    print_warn "\"systemd-inhibit\" command not found. Unable to Inhibit Sleep.\n"
     shift 2
     "$@"
   fi
@@ -165,14 +162,14 @@ continue_prompt_anykey() {
 
 copy_pkgnames() {
   if command -v wl-copy >/dev/null 2>&1; then
-    echo "$1" | wl-copy 2>/dev/null && print_done "Copied Package Names to clipboard\n"
-    echo "$1"
+    echo "$@" | wl-copy 2>/dev/null && print_done "Copied Package Names to clipboard\n"
+    echo "$@"
   elif command -v xclip >/dev/null 2>&1; then
-    echo "$1" | xclip -selection clipboard 2>/dev/null && print_done "Copied Package Names to clipboard\n"
-    echo "$1"
+    echo "$@" | xclip -selection clipboard 2>/dev/null && print_done "Copied Package Names to clipboard\n"
+    echo "$@"
   else
     print_error "\"wl-copy\" or \"xclip\" not found. Install either one to copy the Package Names.\n\nSelected Packages:\n"
-    echo "$1"
+    echo "$@"
   fi
 }
 
@@ -180,101 +177,84 @@ installcommand() {
   case "$pkgchoice" in
   Pacman)
     print_msg "Installing Packages..."
-    (
-      trap 'pkill sudo; exit 130' INT
-      echo "$1" | xargs -ro sudo pacman -S --noconfirm
-    )
-    repo_install_status=$?
-    if [[ $repo_install_status -eq 0 ]]; then
-      print_done "Successfully Installed Packages"
-    elif [[ $repo_install_status -eq 130 ]]; then
-      print_error "Package Install interrupted"
-    else
-      print_error "Failed to Install Packages"
-    fi
-    continue_prompt_anykey
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "Installing Package" \
+      "Prevent shutdown/sleep during package installation" \
+      sudo pacman -S --noconfirm "$@"
+    }
+    install_status=$?
     ;;
   AUR)
     print_msg "Installing Packages..."
-    (
-      trap 'pkill sudo; exit 130' INT
-      echo "$1" | xargs -ro "$aur_helper" "${aur_helper_flags[@]}" -S
-    )
-    aur_install_status=$?
-    if [[ $aur_install_status -eq 0 ]]; then
-      print_done "Successfully Installed Packages"
-    elif [[ $aur_install_status -eq 130 ]]; then
-      print_error "Package Install interrupted"
-    else
-      print_error "Failed to Install Packages"
-    fi
-    continue_prompt_anykey
+   {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "Installing Package" \
+      "Prevent shutdown/sleep during package installation" \
+      "$aur_helper" "${aur_helper_flags[@]}" -S "$@"
+    }
+    install_status=$?
     ;;
   Flatpak)
     print_msg "Installing Packages..."
-    (
-      trap 'pkill sudo; exit 130' INT
-      echo "$1" | awk '{print $2, $1}' | xargs -ro flatpak install
-    )
-    flatpak_install_status=$?
-    if [[ $flatpak_install_status -eq 0 ]]; then
-      print_done "Successfully Installed Packages"
-    elif [[ $flatpak_install_status -eq 130 ]]; then
-      print_error "Package Install interrupted"
-    else
-      print_error "Failed to Install Packages"
-    fi
-    continue_prompt_anykey
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      local entry app repo branch
+        for entry in "$@"; do
+        read -r app repo branch <<< "$entry"
+        inhibit_sleep "Installing Package" \
+      "Prevent shutdown/sleep during package installation" \
+        flatpak install --assumeyes "$repo" "$app"
+    done
+    }
+    install_status=$?
     ;;
   esac
+
+  if [[ $install_status -eq 0 ]]; then
+    print_done "Successfully Installed Packages"
+  elif [[ $install_status -eq 130 ]]; then
+    print_error "Package Install interrupted"
+  else
+    print_error "Failed to Install Packages"
+  fi
+  continue_prompt_anykey
 }
 
 uninstallcommand() {
   case "$pkgchoice" in
   Pacman)
     print_msg "Uninstalling Packages..."
-    (
-      trap 'pkill sudo; exit 130' INT
-      echo "$1" | xargs -ro sudo pacman -Rns --noconfirm
-    )
-    repo_uninstall_status=$?
-    if [[ $repo_uninstall_status -eq 0 ]]; then
-      print_done "Successfully Uninstalled Packages"
-    elif [[ $repo_uninstall_status -eq 130 ]]; then
-      print_error "Package Uninstall interrupted"
-    else
-      print_error "Failed to Uninstall Packages"
-    fi
-    continue_prompt_anykey
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "Installing Package" \
+      "Prevent shutdown/sleep during package installation" \
+      sudo pacman -Rns --noconfirm "$@"
+    }
+    uninstall_status=$?
     ;;
   AUR)
     print_msg "Uninstalling Packages..."
-    (
-      trap 'pkill sudo; exit 130' INT
-      echo "$1" | xargs -ro "$aur_helper" -Rns --noconfirm
-    )
-    aur_uninstall_status=$?
-    if [[ $aur_uninstall_status -eq 0 ]]; then
-      print_done "Successfully Uninstalled Packages"
-    elif [[ $aur_uninstall_status -eq 130 ]]; then
-      print_error "Package Uninstall interrupted"
-    else
-      print_error "Failed to Uninstall Packages"
-    fi
-    continue_prompt_anykey
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "Uninstalling Package" \
+      "Prevent shutdown/sleep during package Uninstallation" \
+      "$aur_helper" -Rns --noconfirm "$@"
+    }
+    uninstall_status=$?
     ;;
   Flatpak)
     print_msg "Uninstalling Packages..."
-    flatpak_failed_uninstall_status_file=$(mktemp)
-    echo "0" >"$flatpak_failed_uninstall_status_file"
-    (
-      trap 'pkill sudo; exit 130' INT
-      mapfile -t flatpak_uninstall_apps <<<"$1"
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
       flatpak_uninstall_success_apps=()
+      flatpak_uninstall_failed_apps=()
       failed_status=0
-      for flatpak_uninstall_app in "${flatpak_uninstall_apps[@]}"; do
+      for flatpak_uninstall_app in "$@"; do
         [[ -z "$flatpak_uninstall_app" ]] && continue
         print_msg "Uninstalling $flatpak_uninstall_app..."
+        inhibit_sleep "Installing Package" \
+      "Prevent shutdown/sleep during package installation" \
         flatpak uninstall --assumeyes "$flatpak_uninstall_app"
         flatpak_uninstall_app_status=$?
         if [[ $flatpak_uninstall_app_status -eq 0 ]]; then
@@ -282,11 +262,9 @@ uninstallcommand() {
           flatpak_uninstall_success_apps+=("$flatpak_uninstall_app")
         else
           print_error "Failed to uninstall $flatpak_uninstall_app"
-          ((failed_status++))
+          flatpak_uninstall_failed_apps+=("$flatpak_uninstall_app")
         fi
       done
-
-      echo "$failed_status" >"$flatpak_failed_uninstall_status_file"
 
       if ((${#flatpak_uninstall_success_apps[@]})); then
         for flatpak_uninstall_success_app in "${flatpak_uninstall_success_apps[@]}"; do
@@ -297,7 +275,7 @@ uninstallcommand() {
             read -r ans </dev/tty
             if [[ "$ans" =~ ^[Yy]$ ]]; then
               echo "Deleting app data: $flatpak_data_dir"
-              rm -rf -- "$flatpak_data_dir"
+              rm -rfv -- "$flatpak_data_dir"
               print_done "App data removed for $flatpak_uninstall_success_app"
             else
               print_msg "App data retained for $flatpak_uninstall_success_app"
@@ -307,39 +285,37 @@ uninstallcommand() {
           fi
         done
       fi
-    )
-    flatpak_uninstall_status=$?
-
-    flatpak_failed_uninstall_status=$(<"$flatpak_failed_uninstall_status_file")
-    rm -f "$flatpak_failed_uninstall_status_file"
-
-    if [[ $flatpak_uninstall_status -eq 130 ]]; then
-      print_error "Package Uninstall interrupted.. Failed to Uninstall $flatpak_failed_uninstall_status Packages"
-    elif [[ $flatpak_failed_uninstall_status -eq 0 ]]; then
-      print_done "Successfully Uninstalled all Packages"
-    else
-      print_error "Failed to Uninstall $flatpak_failed_uninstall_status Packages"
-    fi
-    continue_prompt_anykey
+    }
+    uninstall_status=$?
     ;;
   "Orphan")
     print_msg "Uninstalling Packages..."
-    (
-      trap 'pkill sudo; exit 130' INT
-      echo "$1" | xargs -ro sudo pacman -Rns --noconfirm
-    )
-    repo_uninstall_status=$?
-    if [[ $repo_uninstall_status -eq 0 ]]; then
-      print_done "Successfully Uninstalled Packages"
-    elif [[ $repo_uninstall_status -eq 130 ]]; then
-      print_error "Package Uninstall interrupted"
-    else
-      print_error "Failed to Uninstall Packages"
-    fi
-    continue_prompt_anykey
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "Installing Package" \
+      "Prevent shutdown/sleep during package installation" \
+      sudo pacman -Rns --noconfirm "$@"
+    }
+    uninstall_status=$?
     ;;
 
   esac
+  if [[ $uninstall_status -eq 0 ]]; then
+    print_done "Successfully Uninstalled Packages"
+  elif [[ $uninstall_status -eq 130 ]]; then
+    if [[ -n $flatpak_failed_uninstall_status ]]; then
+      print_error "Package Uninstall interrupted.. Failed to Uninstall ${flatpak_uninstall_failed_apps[@]}"
+    else
+      print_error "Package Uninstall interrupted"
+    fi
+  else
+    if [[ -n $flatpak_failed_uninstall_status ]]; then
+      print_error "Failed to Uninstall ${flatpak_uninstall_failed_apps[@]}"
+    else
+      print_error "Failed to Uninstall Packages"
+    fi
+  fi
+  continue_prompt_anykey
 }
 
 pkgtype() {
@@ -417,8 +393,8 @@ pkginstall() {
       return
       ;;
     esac
-
-    installpkg=$({
+    local selectpkg
+    selectpkg=$({
       printf "Back\n"
       {
         eval "$installpkglistcommand" 2>/dev/null &
@@ -441,15 +417,14 @@ pkginstall() {
                         '"$installpkglisthelper"'
                     fi
         ')
-    [ -z "$installpkg" ] && continue
-    case "$installpkg" in
+    [ -z "$selectpkg" ] && continue
+    case "$selectpkg" in
     "Back")
       continue
       ;;
     *)
-      inhibit_sleep "Installing Package" \
-        "Prevent shutdown/sleep during package installation" \
-        installcommand "$installpkg"
+        mapfile -t installpkg <<< "$selectpkg"
+        installcommand "${installpkg[@]}"
       return
       ;;
     esac
@@ -480,8 +455,8 @@ pkguninstall() {
       return
       ;;
     esac
-
-    uninstallpkg=$({
+    local selectpkg
+    selectpkg=$({
       printf "Back\n"
       eval "$uninstallpkglistcommand"
     } |
@@ -502,13 +477,12 @@ pkguninstall() {
                         '"$uninstallpkglisthelper"'
                     fi
         ')
-    [ -z "$uninstallpkg" ] && continue
-    case "$uninstallpkg" in
+    [ -z "$selectpkg" ] && continue
+    case "$selectpkg" in
     "Back") continue ;;
     *)
-      inhibit_sleep "Uninstalling Package" \
-        "Prevent shutdown/sleep during package uninstallation" \
-        uninstallcommand "$uninstallpkg"
+      mapfile -t uninstallpkg <<< "$selectpkg"
+      uninstallcommand "${uninstallpkg[@]}"
       return
       ;;
     esac
@@ -539,8 +513,8 @@ pkglist() {
       return
       ;;
     esac
-
-    listpkg=$({
+  local selectpkg
+    selectpkg=$({
       printf "Back\n"
       eval "$listpkglistcommand"
     } |
@@ -561,11 +535,12 @@ pkglist() {
                         '"$listpkglisthelper"'
                     fi
         ')
-    [ -z "$listpkg" ] && continue
-    case "$listpkg" in
+    [ -z "$selectpkg" ] && continue
+    case "$selectpkg" in
     "Back") continue ;;
     *)
-      copy_pkgnames "$listpkg"
+      mapfile -t listpkg <<< "$selectpkg"
+      copy_pkgnames "${listpkg[@]}"
       continue_prompt_anykey
       return
       ;;
@@ -584,42 +559,65 @@ pkgcheckupdates() {
       ;;
     esac
 
-    checkupdatespkg=$({
-      printf "Back\n"
-      {
-        checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' &
+    declare -a pids=()
 
-        if [ "$aur_helper" != "None" ]; then
-          "$aur_helper" -Qua --devel 2>/dev/null &
-        fi
+    kill_updates() {
+        for pid in "${pids[@]}"; do
+            kill "$pid" 2>/dev/null
+        done
+        pids=()
+    }
 
-        if command -v flatpak >/dev/null; then
-          flatpak remote-ls --updates --columns=application,version |
-            grep -v "Application ID" 2>/dev/null &
-        fi
-      }
-    } |
-      fzf --multi \
+    trap 'kill_updates; echo "Ctrl+C pressed, update checks stopped."; return 130' INT
+
+    pipe=$(mktemp -u)
+    mkfifo "$pipe"
+
+    echo "Back" > "$pipe" &
+
+    checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' >> "$pipe" &
+    pids+=($!)
+
+    if [ "$aur_helper" != "None" ]; then
+        "$aur_helper" -Qua --devel 2>/dev/null >> "$pipe" &
+        pids+=($!)
+    fi
+
+    if command -v flatpak >/dev/null; then
+        flatpak remote-ls --updates --columns=application,version |
+            grep -v "Application ID" 2>/dev/null >> "$pipe" &
+        pids+=($!)
+    fi
+
+    local selectpkg
+    selectpkg=$(fzf --multi \
         --prompt="Search Packages: " \
         --header="Use TAB to select, ENTER to copy." \
         --preview-window=wrap \
         --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        '"$checkupdatespkglisthelper"'
-                    fi
-        ')
-    [ -z "$checkupdatespkg" ] && return
-    case "$checkupdatespkg" in
-    "Back")
-      return
-      ;;
-    *)
-      copy_pkgnames "$checkupdatespkg"
-      continue_prompt_anykey
-      return
-      ;;
+            if [[ {} = "Back" ]]; then
+                echo "↩ Return to previous menu"
+            else
+                '"$checkupdatespkglisthelper"'
+            fi
+        ' < "$pipe")
+
+    rm -f "$pipe"
+
+    [ -z "$selectpkg" ] && { kill_updates; return; }
+
+    case "$selectpkg" in
+        "Back")
+            kill_updates
+            return 0
+            ;;
+        *)
+            kill_updates
+            mapfile -t checkupdatespkg <<< "$selectpkg"
+            copy_pkgnames "${checkupdatespkg[@]}"
+            continue_prompt_anykey
+            return 0
+            ;;
     esac
   done
 }
@@ -627,28 +625,31 @@ pkgcheckupdates() {
 pkgupdate() {
   update_arch() {
     print_msg "Updating Arch repo packages with \"sudo pacman -Syu\"..."
-    (
-      trap 'pkill sudo; exit 130' INT
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" \
       sudo pacman -Syu --noconfirm
-    )
+    }
     repo_update_status=$?
   }
 
   update_aur() {
     print_msg "Updating AUR packages with \"$aur_helper ${aur_helper_flags[*]} -Syua\"..."
-    (
-      trap 'pkill sudo; exit 130' INT
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" \
       "$aur_helper" "${aur_helper_flags[@]}" -Syua
-    )
+    }
     aur_update_status=$?
   }
 
   update_flatpak() {
     print_msg "Updating Flatpak packages with \"flatpak update --assumeyes\"..."
-    (
-      trap 'exit 130' INT
+    {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+      inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" \
       flatpak update --assumeyes
-    )
+    }
     flatpak_update_status=$?
   }
 
@@ -696,24 +697,24 @@ pkgupdate() {
     continue_prompt_anykey
   }
 
-  inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" mainupdate
+  mainupdate
 }
 
 aurdeveldatagen() {
   print_msg "Generating data for Devel Packages eg:- \"-git\" Packages"
-  (
-    trap 'exit 130' INT
+  {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
     "$aur_helper" "${aurdeveldatagen_flags[@]}"
-  )
+  }
   continue_prompt_anykey
   return
 }
 
 pkgclean() {
   print_msg "Cleaning Package Cache"
-  (
-    trap 'exit 130' INT
-    sudo rm -rf /var/cache/pacman/pkg/download-*
+  {
+      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
+    sudo rm -rfv -- /var/cache/pacman/pkg/download-*
     if [[ "$aur_helper" = "None" ]]; then
       yes | sudo pacman -Scc
     else
@@ -722,13 +723,14 @@ pkgclean() {
     if command -v flatpak >/dev/null; then
       flatpak uninstall --unused
     fi
-  )
+  }
   continue_prompt_anykey
   return
 }
 
 pkgorphans() {
-  orphanpkg=$({
+    local selectpkg
+    selectpkg=$({
     printf "Back\n"
     pacman -Qdtq
   } |
@@ -749,13 +751,12 @@ pkgorphans() {
                 pacman -Qi {1}
             fi
     ')
-  [ -z "$orphanpkg" ] && return
-  case "$orphanpkg" in
+  [ -z "$selectpkg" ] && return
+  case "$selectpkg" in
   "Back") return ;;
   *)
-    inhibit_sleep "Uninstalling Package" \
-      "Prevent shutdown/sleep during package uninstallation" \
-      uninstallcommand "$orphanpkg"
+      mapfile -t orphanpkg <<< "$selectpkg"
+      uninstallcommand "${orphanpkg[@]}"
     return
     ;;
   esac
@@ -806,7 +807,5 @@ pkgmenu() {
     esac
   done
 }
-for fn in $(declare -F | awk '{print $3}'); do
-  export -f "$fn"
-done
+
 pkgmenu
