@@ -563,7 +563,7 @@ pkgcheckupdates() {
 
     kill_updates() {
       for pid in "${pids[@]}"; do
-        kill "$pid" 2>/dev/null
+        kill -9 "$pid" 2>/dev/null
       done
       pids=()
     }
@@ -579,13 +579,13 @@ pkgcheckupdates() {
     pids+=($!)
 
     if [ "$aur_helper" != "None" ]; then
-      "$aur_helper" -Qua --devel 2>/dev/null >>"$pipe" &
+      "$aur_helper" -Qua --devel 2>&1 | grep -v '^devel check for package failed:' >>"$pipe" &
       pids+=($!)
     fi
 
     if command -v flatpak >/dev/null; then
-      flatpak remote-ls --updates --columns=application,version |
-        grep -v "Application ID" 2>/dev/null >>"$pipe" &
+      flatpak remote-ls --updates --columns=application,version 2>/dev/null |
+        grep -v "Application ID" >>"$pipe" &
       pids+=($!)
     fi
 
