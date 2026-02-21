@@ -780,7 +780,7 @@ pkgmenu() {
           --preview-window=wrap \
           --preview '
                     fastfetch;
-                    echo "\n\nAUR Helper = '"$aur_helper"'"
+                    echo -e "\n\nAUR Helper = '"$aur_helper"'"
                     if [[ '"$aur_helper"' = "None" ]]; then
                         echo "\nPacman-only mode"
                     fi
