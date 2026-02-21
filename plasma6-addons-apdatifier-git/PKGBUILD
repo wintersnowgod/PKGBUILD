@@ -1,7 +1,7 @@
 # Maintainer: wintersnowgod <git.xerox732@passinbox.com>
 _pkgname=apdatifier
 pkgname=plasma6-applets-apdatifier-git
-pkgver=r406.b35dc11
+pkgver=r410.0cf64db
 pkgrel=1
 pkgdesc="KDE Plasma widget that tracks updates for ArchLinux, Plasma Widgets, and Flatpak, providing notifications for new ones."
 arch=('any')
