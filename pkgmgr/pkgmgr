@@ -31,24 +31,17 @@ print_finished() {
   echo -e "\n${GREEN}${BOLD}::$1::${RESET}"
 }
 
-if [[ -z "$TERM" || "$TERM" == "dumb" ]]; then
-  if command -v kitty >/dev/null; then
-    kitty -e bash -c "$0"
-    exit 0
-  elif command -v alacritty >/dev/null; then
-    alacritty -e bash -c "$0"
-    exit 0
+if [[ ! -t 1 ]]; then
+  if command -v alacritty >/dev/null; then
+    exec alacritty -e bash "$0" "$@"
+  elif command -v kitty >/dev/null; then
+    exec kitty -e bash "$0" "$@"
   elif command -v konsole >/dev/null; then
-    konsole -e bash -c "$0"
-    exit 0
+    exec konsole -e bash "$0" "$@"
   elif command -v gnome-terminal >/dev/null; then
-    gnome-terminal -- bash -c "$0"
-    exit 0
-  elif command -v xfce4-terminal >/dev/null; then
-    xfce4-terminal -e "bash -c '$0'"
-    exit 0
+    exec gnome-terminal -- bash "$0" "$@"
   else
-    print_warn "No supported terminal emulator found. Please run this script from a terminal or open a issue saying which terminal emulator you are using to run this script."
+    echo "No terminal emulator found"
     exit 1
   fi
 fi
@@ -56,7 +49,7 @@ fi
 if ! command -v pacman >/dev/null; then
   print_warn "Run only on systems with pacman as the package manager.\nIf you somehow managed to delete the \"pacman\" package then IDK.\n"
   print_error "Press any key to EXIT"
-  read -n1 -r
+  read -r
   exit 1
 fi
 
@@ -579,7 +572,7 @@ pkgcheckupdates() {
     pids+=($!)
 
     if [ "$aur_helper" != "None" ]; then
-      "$aur_helper" -Qua --devel 2>&1 | grep -v '^devel check for package failed:' >>"$pipe" &
+      "$aur_helper" -Qua --devel 2>/dev/null | grep -vF "devel check for package failed" >>"$pipe" &
       pids+=($!)
     fi
 
@@ -779,23 +772,21 @@ pkgmenu() {
           --header="Select Operation:       ctrl+u to Update System" \
           --preview-window=wrap \
           --preview '
-                    fastfetch;
-                    echo -e "\n\nAUR Helper = '"$aur_helper"'"
-                    if [[ '"$aur_helper"' = "None" ]]; then
-                        echo "\nPacman-only mode"
-                    fi
-                    echo;
-                    echo "Hovered Option:";
-                    echo {};
-                    echo;
-                    if [[ {} = "Exit" ]]; then
-                        echo "↩ Exit the Manager"
-                    fi' \
-          --bind "ctrl-u:execute(bash -c 'colors; aursetup; pkgupdate')"
+                fastfetch;
+                echo -e "\n\nAUR Helper = '"$aur_helper"'"
+                if [[ '"$aur_helper"' = "None" ]]; then
+                  echo "\nPacman-only mode"
+                fi
+                echo;
+                echo "Hovered Option:";
+                echo {};
+                echo;
+                if [[ {} = "Exit" ]]; then
+                  echo "↩ Exit the Manager"
+                fi
+        '
     )
-
     [ -z "$pkgmanager" ] && return
-
     case "$pkgmanager" in
     "Install Packages") pkginstall ;;
     "Uninstall Packages") pkguninstall ;;
