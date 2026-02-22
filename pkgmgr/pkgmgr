@@ -794,18 +794,24 @@ pkgmenu() {
   while true; do
     pkgmanager=$(
       {
-        if [[ "$aur_helper" = "None" ]]; then
-          printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nChange AUR Helper\nExit"
-        else
-          printf "Install Packages\nUninstall Packages\nCheck Updates\nUpdate System\nList Packages\nList Orphan Packages\nClean Packages\nGenerate devel Data For AUR Helpers\nChange AUR Helper\nExit"
+        printf "Install Packages\n"
+        printf "Uninstall Packages\n"
+        printf "Check Updates\n"
+        printf "Update System\n"
+        printf "List Packages\n"
+        printf "List Orphan Packages\n"
+        printf "Clean Packages\n"
+        if [[ "$aur_helper" != "None" ]]; then
+          printf "Generate devel Data For AUR Helpers\n"
         fi
+        printf "Change AUR Helper\n"
+        printf "Exit"
       } |
         fzf --prompt="Search: " \
           --header="Select Operation: " \
           --preview-window=wrap \
           --preview '
-                fastfetch;
-                printf '"'\n\nAUR Helper = %s\n'"' '"$aur_helper"'
+                printf '"'AUR Helper = %s\n'"' '"$aur_helper"'
                 if [[ '"$aur_helper"' = "None" ]]; then
                   echo "\nPacman-only mode"
                 fi
