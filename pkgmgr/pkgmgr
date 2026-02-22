@@ -47,27 +47,37 @@ print_finished() {
   printf '\n%s%s::%s::%s\n' "$GREEN" "$BOLD" "$1" "$RESET"
 }
 
-if [[ ! -t 1 ]]; then
-  if command -v alacritty >/dev/null; then
-    exec alacritty -e bash "$0" "$@"
-  elif command -v kitty >/dev/null; then
-    exec kitty -e bash "$0" "$@"
-  elif command -v konsole >/dev/null; then
-    exec konsole -e bash "$0" "$@"
-  elif command -v gnome-terminal >/dev/null; then
-    exec gnome-terminal -- bash "$0" "$@"
-  else
-    echo "No terminal emulator found"
+precheck() {
+  if [[ ! -t 1 ]]; then
+    if command -v alacritty >/dev/null; then
+      exec alacritty -e bash "$0" "$@"
+    elif command -v kitty >/dev/null; then
+      exec kitty -e bash "$0" "$@"
+    elif command -v konsole >/dev/null; then
+      exec konsole -e bash "$0" "$@"
+    elif command -v gnome-terminal >/dev/null; then
+      exec gnome-terminal -- bash "$0" "$@"
+    else
+      echo "No terminal emulator found"
+      exit 1
+    fi
+  fi
+
+  if ! command -v pacman >/dev/null; then
+    print_warn "Run only on systems with pacman as the package manager.\nIf you somehow managed to delete the \"pacman\" package then IDK.\n"
+    print_error "Press any key to EXIT"
+    read -r
     exit 1
   fi
-fi
+}
 
-if ! command -v pacman >/dev/null; then
-  print_warn "Run only on systems with pacman as the package manager.\nIf you somehow managed to delete the \"pacman\" package then IDK.\n"
-  print_error "Press any key to EXIT"
-  read -r
-  exit 1
-fi
+helptext() {
+  printf '%sA package manager for Arch Based Systems using pacman, AUR and Flatpak repos. Supports "yay" and "paru" AUR helpers.%s\n\n' "$YELLOW" "$RESET"
+
+  printf '    %s--help | -h%s       :         Shows the help menu (This menu)\n' "$BLUE" "$RESET"
+  printf '    %s--update%s          :         Updates the system\n' "$BLUE" "$RESET"
+  printf '    %s--updatecount%s     :         Shows the number of available updates\n' "$BLUE" "$RESET"
+}
 
 aursetup() {
   force_aur_helper_cache_reset="$1"
