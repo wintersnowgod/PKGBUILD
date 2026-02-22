@@ -28,23 +28,23 @@ else
 fi
 
 print_msg() {
-  echo -e "\n${BLUE}${BOLD}>>> $1${RESET}"
+  printf '\n%s%s>>> %s%s\n' "$BLUE" "$BOLD" "$1" "$RESET"
 }
 
 print_done() {
-  echo -e "\n${GREEN}${BOLD}✔ $1${RESET}"
+  printf '\n%s%s✔ %s%s\n' "$GREEN" "$BOLD" "$1" "$RESET"
 }
 
 print_warn() {
-  echo -e "\n${YELLOW}${BOLD}! $1${RESET}"
+  printf '\n%s%s! %s%s\n' "$YELLOW" "$BOLD" "$1" "$RESET"
 }
 
 print_error() {
-  echo -e "\n${RED}${BOLD}✘ $1${RESET}"
+  printf '\n%s%s✘ %s%s\n' "$RED" "$BOLD" "$1" "$RESET"
 }
 
 print_finished() {
-  echo -e "\n${GREEN}${BOLD}::$1::${RESET}"
+  printf '\n%s%s::%s::%s\n' "$GREEN" "$BOLD" "$1" "$RESET"
 }
 
 if [[ ! -t 1 ]]; then
