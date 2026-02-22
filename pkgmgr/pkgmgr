@@ -1,15 +1,31 @@
 #!/usr/bin/env bash
 
-colors() {
-  RED='\033[31m'
-  GREEN='\033[32m'
-  YELLOW='\033[33m'
-  BLUE='\033[34m'
-  BOLD='\033[1m'
-  RESET='\033[0m'
-}
+USE_COLOR=0
 
-colors
+if [[ -t 1 ]] && [[ "${TERM:-}" != "dumb" ]]; then
+  if command -v tput >/dev/null 2>&1; then
+    ncolors=$(tput colors)
+    if [[ -n "$ncolors" ]] && [[ "$ncolors" -ge 8 ]]; then
+      USE_COLOR=1
+    fi
+  fi
+fi
+
+if ((USE_COLOR)); then
+  YELLOW="$(printf '\033[33m')"
+  BLUE="$(printf '\033[34m')"
+  GREEN="$(printf '\033[32m')"
+  RED="$(printf '\033[31m')"
+  BOLD="$(printf '\033[1m')"
+  RESET="$(printf '\033[0m')"
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  BOLD=''
+  RESET=''
+fi
 
 print_msg() {
   echo -e "\n${BLUE}${BOLD}>>> $1${RESET}"
