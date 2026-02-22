@@ -1,6 +1,6 @@
 pkgbase = plasma6-applets-apdatifier-git
 	pkgdesc = KDE Plasma widget that tracks updates for ArchLinux, Plasma Widgets, and Flatpak, providing notifications for new ones.
-	pkgver = r406.b35dc11
+	pkgver = r410.0cf64db
 	pkgrel = 1
 	url = https://github.com/exequtic/apdatifier
 	arch = any
