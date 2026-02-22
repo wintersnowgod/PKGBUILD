@@ -567,6 +567,14 @@ pkglist() {
   done
 }
 
+pkgupdatecount() {
+  (
+    checkupdates 2>/dev/null
+    yay -Qua --devel 2>/dev/null | grep -vF "devel check for package failed"
+    flatpak remote-ls --updates 2>/dev/null
+  ) | wc -l
+}
+
 pkgcheckupdates() {
   while true; do
     case "$aur_helper" in
