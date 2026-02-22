@@ -803,7 +803,7 @@ pkgmenu() {
         fi
       } |
         fzf --prompt="Search: " \
-          --header="Select Operation:       ctrl+u to Update System" \
+          --header="Select Operation: " \
           --preview-window=wrap \
           --preview '
                 fastfetch;
