@@ -9,7 +9,7 @@ optdepends=('xclip: For X11 copy to clipboard'
   'wl-copy: For Wayland Copy to clipboard')
 source=("pkgmgr"
   "pkgmgr.desktop")
-sha256sums=('ba85d2da487d5be956f5399e5f1a6bbdec0ad4eac8f7176fd6d16154cd1ac21f'
+sha256sums=('e6da9fa3a1445aaf810a14b4fd3159648cf196a287bbdee77763c019b64240d0'
             '93caa3f225a3e191b5c2534303c711ea586a95898a741f7fbc3300a5e8cc0c11')
 
 package() {
