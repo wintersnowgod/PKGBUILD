@@ -566,11 +566,35 @@ pkglist() {
 }
 
 pkgupdatecount() {
-  (
-    checkupdates 2>/dev/null
-    yay -Qua --devel 2>/dev/null | grep -vF "devel check for package failed"
-    flatpak remote-ls --updates 2>/dev/null
-  ) | wc -l
+  declare -a pids=()
+
+  kill_updates() {
+    for pid in "${pids[@]}"; do
+      kill -9 "$pid" 2>/dev/null
+    done
+    pids=()
+  }
+
+  trap 'kill_updates; echo "Ctrl+C pressed, update checks stopped."; return 130' INT
+
+  pipe=$(mktemp -u)
+  mkfifo "$pipe"
+
+  checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' >>"$pipe" &
+  pids+=($!)
+
+  if [ "$aur_helper" != "None" ]; then
+    "$aur_helper" -Qua --devel 2>/dev/null | grep -vF "devel check for package failed" >>"$pipe" &
+    pids+=($!)
+  fi
+
+  if command -v flatpak >/dev/null; then
+    flatpak remote-ls --updates --columns=application,version 2>/dev/null |
+      grep -v "Application ID" >>"$pipe" &
+    pids+=($!)
+  fi
+  cat "$pipe" | wc -l
+  rm -f "$pipe"
 }
 
 pkgcheckupdates() {
@@ -850,7 +874,10 @@ case "$1" in
   aursetup
   pkgupdate
   ;;
-"--updatecount") pkgupdatecount ;;
+"--updatecount")
+  aursetup
+  pkgupdatecount
+  ;;
 *)
   precheck "$@"
   aursetup
