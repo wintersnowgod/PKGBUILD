@@ -166,10 +166,10 @@ inhibit_sleep() {
 
 continue_prompt_anykey() {
   print_finished "Press any key to Continue"
-  (
-    trap 'exit 130' INT
+  {
+    trap 'return 130' INT
     read -n1 -r
-  )
+  }
   anykey_prompt_status=$?
   if [[ $anykey_prompt_status -eq 0 ]] || [[ $anykey_prompt_status -eq 130 ]]; then
     clear
