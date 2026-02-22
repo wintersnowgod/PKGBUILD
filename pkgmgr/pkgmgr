@@ -147,8 +147,6 @@ aursetup() {
   aurflags
 }
 
-aursetup
-
 inhibit_sleep() {
   if command -v systemd-inhibit >/dev/null 2>&1; then
     print_warn "Inhibiting Sleep using \"systemd-inhibit\".\n"
@@ -836,4 +834,20 @@ pkgmenu() {
   done
 }
 
-pkgmenu
+case "$1" in
+"--help" | "-h")
+  precheck "$@"
+  helptext
+  ;;
+"--update")
+  precheck "$@"
+  aursetup
+  pkgupdate
+  ;;
+"--updatecount") pkgupdatecount ;;
+*)
+  precheck "$@"
+  aursetup
+  pkgmenu
+  ;;
+esac
