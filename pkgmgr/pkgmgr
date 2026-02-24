@@ -27,27 +27,27 @@ else
   RESET=''
 fi
 
-print_msg() {
+printMsg() {
   printf '\n%s%s>>> %s%s\n' "$BLUE" "$BOLD" "$1" "$RESET"
 }
 
-print_done() {
+printDone() {
   printf '\n%s%s✔ %s%s\n' "$GREEN" "$BOLD" "$1" "$RESET"
 }
 
-print_warn() {
+printWarn() {
   printf '\n%s%s! %s%s\n' "$YELLOW" "$BOLD" "$1" "$RESET"
 }
 
-print_error() {
+printError() {
   printf '\n%s%s✘ %s%s\n' "$RED" "$BOLD" "$1" "$RESET"
 }
 
-print_finished() {
+printEnd() {
   printf '\n%s%s::%s::%s\n' "$GREEN" "$BOLD" "$1" "$RESET"
 }
 
-precheck() {
+preCheck() {
   if [[ ! -t 1 ]]; then
     if command -v alacritty >/dev/null; then
       exec alacritty -e bash "$0" "$@"
@@ -64,8 +64,8 @@ precheck() {
   fi
 
   if ! command -v pacman >/dev/null; then
-    print_warn "Run only on systems with pacman as the package manager.\nIf you somehow managed to delete the \"pacman\" package then IDK.\n"
-    print_error "Press any key to EXIT"
+    printWarn "Run only on systems with pacman as the package manager.\nIf you somehow managed to delete the \"pacman\" package then IDK.\n"
+    printError "Press any key to EXIT"
     read -r
     exit 1
   fi
@@ -79,33 +79,33 @@ helptext() {
   printf '    %s--updatecount%s     :         Shows the number of available updates\n' "$BLUE" "$RESET"
 }
 
-aursetup() {
-  force_aur_helper_cache_reset="$1"
-  aurdetect() {
-    aur_helper_cache_file="${XDG_CACHE_HOME:-$HOME/.cache}/aur_helper"
-    if [ "$force_aur_helper_cache_reset" != "--forcereset" ]; then
-      if [ -f "$aur_helper_cache_file" ]; then
-        saved_aur_helper=$(<"$aur_helper_cache_file")
-        if command -v "$saved_aur_helper" >/dev/null 2>&1; then
-          aur_helper="$saved_aur_helper"
+aurSetup() {
+  forceAurHelperCacheReset="$1"
+  aurDetect() {
+    aurHelperCacheFile="${XDG_CACHE_HOME:-$HOME/.cache}/aurHelper"
+    if [ "$forceAurHelperCacheReset" != "--forcereset" ]; then
+      if [ -f "$aurHelperCacheFile" ]; then
+        savedAURHelper=$(<"$aurHelperCacheFile")
+        if command -v "$savedAURHelper" >/dev/null 2>&1; then
+          aurHelper="$savedAURHelper"
           return
         fi
       fi
     fi
 
-    aur_helpers=()
-    command -v yay >/dev/null 2>&1 && aur_helpers+=("yay")
-    command -v paru >/dev/null 2>&1 && aur_helpers+=("paru")
+    aurHelpers=()
+    command -v yay >/dev/null 2>&1 && aurHelpers+=("yay")
+    command -v paru >/dev/null 2>&1 && aurHelpers+=("paru")
 
-    if [ ${#aur_helpers[@]} -eq 0 ]; then
-      aur_helper="None"
-      echo "$aur_helper" >"$aur_helper_cache_file"
-    elif [ ${#aur_helpers[@]} -eq 1 ]; then
-      aur_helper="${aur_helpers[0]}"
-      echo "$aur_helper" >"$aur_helper_cache_file"
+    if [ ${#aurHelpers[@]} -eq 0 ]; then
+      aurHelper="None"
+      echo "$aurHelper" >"$aurHelperCacheFile"
+    elif [ ${#aurHelpers[@]} -eq 1 ]; then
+      aurHelper="${aurHelpers[0]}"
+      echo "$aurHelper" >"$aurHelperCacheFile"
     else
-      aur_helpers+=("None")
-      aur_helper=$(printf "%s\n" "${aur_helpers[@]}" |
+      aurHelpers+=("None")
+      aurHelper=$(printf "%s\n" "${aurHelpers[@]}" |
         fzf --prompt="Select AUR Helper: " \
           --header="Choose which AUR helper to use. If you dont have a AUR helper choose \"None\"" \
           --preview-window=wrap \
@@ -113,15 +113,15 @@ aursetup() {
                     echo "Hovered Option:";
                     echo {}
             ')
-      [ -z "$aur_helper" ] && echo "No selection made. Exiting." && exit 1
-      echo "$aur_helper" >"$aur_helper_cache_file"
+      [ -z "$aurHelper" ] && echo "No selection made. Exiting." && exit 1
+      echo "$aurHelper" >"$aurHelperCacheFile"
     fi
   }
 
-  aurflags() {
-    if [[ "$aur_helper" != "None" ]]; then
-      if [[ "$aur_helper" = "yay" ]]; then
-        aur_helper_flags=(--devel
+  aurArgs() {
+    if [[ "$aurHelper" != "None" ]]; then
+      if [[ "$aurHelper" = "yay" ]]; then
+        aurHelperArgs=(--devel
           --needed
           --answerupgrade None
           --answerclean All
@@ -134,22 +134,22 @@ aursetup() {
           --noconfirm
           --mflags
           --noconfirm)
-        aurdeveldatagen_flags=(-Y --gendb)
-        cleanpkg_flags=(-Scc)
-      elif [[ "$aur_helper" = "paru" ]]; then
-        aur_helper_flags=()
-        aurdeveldatagen_flags=(--gendb)
-        cleanpkg_flags=(-Sccd)
+        aurDevelDataGenArgs=(-Y --gendb)
+        cleanPkgArgs=(-Scc)
+      elif [[ "$aurHelper" = "paru" ]]; then
+        aurHelperArgs=()
+        aurDevelDataGenArgs=(--gendb)
+        cleanPkgArgs=(-Sccd)
       fi
     fi
   }
-  aurdetect
-  aurflags
+  aurDetect
+  aurArgs
 }
 
-inhibit_sleep() {
+inhibitSleep() {
   if command -v systemd-inhibit >/dev/null 2>&1; then
-    print_warn "Inhibiting Sleep using \"systemd-inhibit\"."
+    printWarn "Inhibiting Sleep using \"systemd-inhibit\"."
     local who="$1"
     local why="$2"
     shift 2
@@ -158,197 +158,187 @@ inhibit_sleep() {
       --why="$why" \
       "$@"
   else
-    print_warn "\"systemd-inhibit\" command not found. Unable to Inhibit Sleep."
+    printWarn "\"systemd-inhibit\" command not found. Unable to Inhibit Sleep."
     shift 2
     "$@"
   fi
 }
 
-continue_prompt_anykey() {
-  print_finished "Press any key to Continue"
+continuePromptAnyKey() {
+  printEnd "Press any key to Continue"
   {
-    trap 'return 130' INT
+    trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
     read -n1 -r
   }
-  anykey_prompt_status=$?
-  if [[ $anykey_prompt_status -eq 0 ]] || [[ $anykey_prompt_status -eq 130 ]]; then
+  anyKeyPromptStatus=$?
+  if [[ $anyKeyPromptStatus -eq 0 ]] || [[ $anyKeyPromptStatus -eq 130 ]]; then
     clear
     return
   fi
 }
 
-copy_pkgnames() {
+copyPkgNames() {
   if command -v wl-copy >/dev/null 2>&1; then
-    echo "$@" | wl-copy 2>/dev/null && print_done "Copied Package Names to clipboard"
+    echo "$@" | wl-copy 2>/dev/null && printDone "Copied Package Names to clipboard"
     echo "$@"
   elif command -v xclip >/dev/null 2>&1; then
-    echo "$@" | xclip -selection clipboard 2>/dev/null && print_done "Copied Package Names to clipboard"
+    echo "$@" | xclip -selection clipboard 2>/dev/null && printDone "Copied Package Names to clipboard"
     echo "$@"
   else
-    print_error "\"wl-copy\" or \"xclip\" not found. Install either one to copy the Package Names.\n\nSelected Packages:"
+    printError "\"wl-copy\" or \"xclip\" not found. Install either one to copy the Package Names.\n\nSelected Packages:"
     echo "$@"
   fi
 }
 
-installcommand() {
-  case "$pkgchoice" in
+installListedPkgs() {
+  case "$selectedPkgType" in
   Pacman)
-    print_msg "Installing Packages..."
+    printMsg "Installing Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "Installing Package" \
+      inhibitSleep "Installing Package" \
         "Prevent shutdown/sleep during package installation" \
         sudo pacman -S --noconfirm "$@"
     }
-    install_status=$?
+    installStatus=$?
     ;;
   AUR)
-    print_msg "Installing Packages..."
+    printMsg "Installing Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "Installing Package" \
+      inhibitSleep "Installing Package" \
         "Prevent shutdown/sleep during package installation" \
-        "$aur_helper" "${aur_helper_flags[@]}" -S "$@"
+        "$aurHelper" "${aurHelperArgs[@]}" -S "$@"
     }
-    install_status=$?
+    installStatus=$?
     ;;
   Flatpak)
-    print_msg "Installing Packages..."
+    printMsg "Installing Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
       local entry app repo _
       for entry in "$@"; do
         read -r app repo _ <<<"$entry"
-        inhibit_sleep "Installing Package" \
+        inhibitSleep "Installing Package" \
           "Prevent shutdown/sleep during package installation" \
           flatpak install --assumeyes "$repo" "$app"
       done
     }
-    install_status=$?
+    installStatus=$?
     ;;
   esac
 
-  if [[ $install_status -eq 0 ]]; then
-    print_done "Successfully Installed Packages"
-  elif [[ $install_status -eq 130 ]]; then
-    print_error "Package Install interrupted"
+  if [[ $installStatus -eq 0 ]]; then
+    printDone "Successfully Installed Packages"
+  elif [[ $installStatus -eq 130 ]]; then
+    printError "Package Install interrupted"
   else
-    print_error "Failed to Install Packages"
+    printError "Failed to Install Packages"
   fi
-  continue_prompt_anykey
+  continuePromptAnyKey
 }
 
-uninstallcommand() {
-  case "$pkgchoice" in
+uninstallListedPkgs() {
+  case "$selectedPkgType" in
   Pacman)
-    print_msg "Uninstalling Packages..."
+    printMsg "Uninstalling Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "Installing Package" \
+      inhibitSleep "Installing Package" \
         "Prevent shutdown/sleep during package installation" \
         sudo pacman -Rns --noconfirm "$@"
     }
-    uninstall_status=$?
+    uninstallStatus=$?
     ;;
   AUR)
-    print_msg "Uninstalling Packages..."
+    printMsg "Uninstalling Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "Uninstalling Package" \
+      inhibitSleep "Uninstalling Package" \
         "Prevent shutdown/sleep during package Uninstallation" \
-        "$aur_helper" -Rns --noconfirm "$@"
+        "$aurHelper" -Rns --noconfirm "$@"
     }
-    uninstall_status=$?
+    uninstallStatus=$?
     ;;
   Flatpak)
-    print_msg "Uninstalling Packages..."
+    printMsg "Uninstalling Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      flatpak_uninstall_success_apps=()
-      flatpak_uninstall_failed_apps=()
+      flatpakUninstallSuccessPkgNames=()
+      flatpakUninstallFailedPkgNames=()
 
-      for flatpak_uninstall_app in "$@"; do
-        [[ -z "$flatpak_uninstall_app" ]] && continue
-        print_msg "Uninstalling $flatpak_uninstall_app..."
-        inhibit_sleep "Installing Package" \
+      for flatpakUninstallPkgNames in "$@"; do
+        [[ -z "$flatpakUninstallPkgNames" ]] && continue
+        printMsg "Uninstalling $flatpakUninstallPkgNames..."
+        inhibitSleep "Installing Package" \
           "Prevent shutdown/sleep during package installation" \
-          flatpak uninstall --assumeyes "$flatpak_uninstall_app"
-        flatpak_uninstall_app_status=$?
-        if [[ $flatpak_uninstall_app_status -eq 0 ]]; then
-          print_done "$flatpak_uninstall_app uninstalled successfully"
-          flatpak_uninstall_success_apps+=("$flatpak_uninstall_app")
+          flatpak uninstall --assumeyes "$flatpakUninstallPkgNames"
+        flatpakUninstallStatus=$?
+        if [[ $flatpakUninstallStatus -eq 0 ]]; then
+          printDone "$flatpakUninstallPkgNames uninstalled successfully"
+          flatpakUninstallSuccessPkgNames+=("$flatpakUninstallPkgNames")
         else
-          print_error "Failed to uninstall $flatpak_uninstall_app"
-          flatpak_uninstall_failed_apps+=("$flatpak_uninstall_app")
+          printError "Failed to uninstall $flatpakUninstallPkgNames"
+          flatpakUninstallFailedPkgNames+=("$flatpakUninstallPkgNames")
         fi
       done
 
-      if ((${#flatpak_uninstall_success_apps[@]})); then
-        for flatpak_uninstall_success_app in "${flatpak_uninstall_success_apps[@]}"; do
-          flatpak_data_dir="$HOME/.var/app/$flatpak_uninstall_success_app"
-          if [[ -d "$flatpak_data_dir" ]]; then
-            print_warn "App data found for $flatpak_uninstall_success_app"
-            print_msg "Do you want to remove app data for '$flatpak_uninstall_success_app'? (y/N): "
+      if ((${#flatpakUninstallSuccessPkgNames[@]})); then
+        for flatpakUninstallSuccessPkgName in "${flatpakUninstallSuccessPkgNames[@]}"; do
+          flatpakDataDir="$HOME/.var/app/$flatpakUninstallSuccessPkgName"
+          if [[ -d "$flatpakDataDir" ]]; then
+            printWarn "App data found for $flatpakUninstallSuccessPkgName"
+            printMsg "Do you want to remove app data for '$flatpakUninstallSuccessPkgName'? (y/N): "
             read -r ans </dev/tty
             if [[ "$ans" =~ ^[Yy]$ ]]; then
-              echo "Deleting app data: $flatpak_data_dir"
-              rm -rfv -- "$flatpak_data_dir"
-              print_done "App data removed for $flatpak_uninstall_success_app"
+              echo "Deleting app data: $flatpakDataDir"
+              rm -rfv -- "$flatpakDataDir"
+              printDone "App data removed for $flatpakUninstallSuccessPkgName"
             else
-              print_msg "App data retained for $flatpak_uninstall_success_app"
+              printMsg "App data retained for $flatpakUninstallSuccessPkgName"
             fi
           else
-            print_warn "No app data found for $flatpak_uninstall_success_app"
+            printWarn "No app data found for $flatpakUninstallSuccessPkgName"
           fi
         done
       fi
     }
-    uninstall_status=$?
+    uninstallStatus=$?
     ;;
-  "Orphan")
-    print_msg "Uninstalling Packages..."
-    {
-      trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "Installing Package" \
-        "Prevent shutdown/sleep during package installation" \
-        sudo pacman -Rns --noconfirm "$@"
-    }
-    uninstall_status=$?
-    ;;
-
   esac
-  if [[ $uninstall_status -eq 0 ]]; then
-    print_done "Successfully Uninstalled Packages"
-  elif [[ $uninstall_status -eq 130 ]]; then
-    if [[ -n $flatpak_failed_uninstall_status ]]; then
-      print_error "Package Uninstall interrupted.. Failed to Uninstall ${flatpak_uninstall_failed_apps[*]}"
+
+  if [[ $uninstallStatus -eq 0 ]]; then
+    printDone "Successfully Uninstalled Packages"
+  elif [[ $uninstallStatus -eq 130 ]]; then
+    if [[ -n $flatpak_failed_uninstallStatus ]]; then
+      printError "Package Uninstall interrupted.. Failed to Uninstall ${flatpakUninstallFailedPkgNames[*]}"
     else
-      print_error "Package Uninstall interrupted"
+      printError "Package Uninstall interrupted"
     fi
   else
-    if [[ -n $flatpak_failed_uninstall_status ]]; then
-      print_error "Failed to Uninstall ${flatpak_uninstall_failed_apps[*]}"
+    if [[ -n $flatpak_failed_uninstallStatus ]]; then
+      printError "Failed to Uninstall ${flatpakUninstallFailedPkgNames[*]}"
     else
-      print_error "Failed to Uninstall Packages"
+      printError "Failed to Uninstall Packages"
     fi
   fi
-  continue_prompt_anykey
+  continuePromptAnyKey
 }
 
-pkgtype() {
-  case "$aur_helper" in
+whichPkgType() {
+  case "$aurHelper" in
   "None")
-    pkgtypechoices="Pacman"
+    pkgTypeChoices="Pacman"
     ;;
   *)
-    pkgtypechoices="Pacman\nAUR"
+    pkgTypeChoices="Pacman\nAUR"
     ;;
   esac
 
-  command -v flatpak >/dev/null && pkgtypechoices="${pkgtypechoices}\nFlatpak"
-  pkgtypechoices="${pkgtypechoices}\nBack"
+  command -v flatpak >/dev/null && pkgTypeChoices="${pkgTypeChoices}\nFlatpak"
+  pkgTypeChoices="${pkgTypeChoices}\nBack"
 
-  pkgchoice=$(printf "%b" "$pkgtypechoices" |
+  selectedPkgType=$(printf "%b" "$pkgTypeChoices" |
     fzf --prompt="Search: " \
       --header="Select package type: " \
       --preview-window=wrap \
@@ -362,17 +352,17 @@ pkgtype() {
             ')
 }
 
-pkginstall() {
+listRemotePkgs() {
   while true; do
 
-    pkgtype
+    whichPkgType
 
-    [ -z "$pkgchoice" ] && return
+    [ -z "$selectedPkgType" ] && return
 
-    case "$pkgchoice" in
+    case "$selectedPkgType" in
     Pacman)
-      installpkglistcommand="pacman -Slq"
-      installpkglisthelper='
+      listRemotePkgCmd="pacman -Slq"
+      fzfPreviewRemotePkgs='
                             if pacman -Qin {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
@@ -383,20 +373,20 @@ pkginstall() {
                 '
       ;;
     AUR)
-      installpkglistcommand="$aur_helper -Slqa"
-      installpkglisthelper='
-                            if '"$aur_helper"' -Qim {1} &>/dev/null; then
+      listRemotePkgCmd="$aurHelper -Slqa"
+      fzfPreviewRemotePkgs='
+                            if '"$aurHelper"' -Qim {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
-                                '"$aur_helper"' -Qim {1} || pacman -Qim {1};
+                                '"$aurHelper"' -Qim {1} || pacman -Qim {1};
                             else
-                                '"$aur_helper"' -Si {1};
+                                '"$aurHelper"' -Si {1};
                             fi
                 '
       ;;
     Flatpak)
-      installpkglistcommand="flatpak search --columns=application,remote,branch \"\""
-      installpkglisthelper='
+      listRemotePkgCmd="flatpak search --columns=application,remote,branch \"\""
+      fzfPreviewRemotePkgs='
                             if flatpak info {1} &>/dev/null; then
                                 echo "*****Installed*****"
                                 echo
@@ -410,11 +400,11 @@ pkginstall() {
       return
       ;;
     esac
-    local selectpkg
-    selectpkg=$({
+    local selectedPkgNames
+    selectedPkgNames=$({
       printf "Back\n"
       {
-        eval "$installpkglistcommand" 2>/dev/null &
+        eval "$listRemotePkgCmd" 2>/dev/null &
       }
     } |
       fzf --multi \
@@ -431,51 +421,51 @@ pkginstall() {
                         echo "Hovered Packages:";
                         echo {} | tr " " "\n";
                         echo;
-                        '"$installpkglisthelper"'
+                        '"$fzfPreviewRemotePkgs"'
                     fi
         ')
-    [ -z "$selectpkg" ] && continue
-    case "$selectpkg" in
+    [ -z "$selectedPkgNames" ] && continue
+    case "$selectedPkgNames" in
     "Back")
       continue
       ;;
     *)
-      mapfile -t installpkg <<<"$selectpkg"
-      installcommand "${installpkg[@]}"
+      mapfile -t installPkgNames <<<"$selectedPkgNames"
+      installListedPkgs "${installPkgNames[@]}"
       return
       ;;
     esac
   done
 }
 
-pkguninstall() {
+listInstalledPkgs() {
   while true; do
 
-    pkgtype
+    whichPkgType
 
-    [ -z "$pkgchoice" ] && return
+    [ -z "$selectedPkgType" ] && return
 
-    case "$pkgchoice" in
+    case "$selectedPkgType" in
     Pacman)
-      uninstallpkglistcommand="pacman -Qqn"
-      uninstallpkglisthelper='pacman -Qin {1}'
+      listInstalledPkgCmd="pacman -Qqn"
+      fzfPreviewInstalledPkgs='pacman -Qin {1}'
       ;;
     AUR)
-      uninstallpkglistcommand="$aur_helper -Qqm"
-      uninstallpkglisthelper="$aur_helper -Qim {1} || pacman -Qim {1}"
+      listInstalledPkgCmd="$aurHelper -Qqm"
+      fzfPreviewInstalledPkgs="$aurHelper -Qim {1} || pacman -Qim {1}"
       ;;
     Flatpak)
-      uninstallpkglistcommand="flatpak list --columns=application --app | grep -v \"Application ID\""
-      uninstallpkglisthelper='flatpak info {1}'
+      listInstalledPkgCmd="flatpak list --columns=application --app | grep -v \"Application ID\""
+      fzfPreviewInstalledPkgs='flatpak info {1}'
       ;;
     Back)
       return
       ;;
     esac
-    local selectpkg
-    selectpkg=$({
+    local selectedPkgNames
+    selectedPkgNames=$({
       printf "Back\n"
-      eval "$uninstallpkglistcommand"
+      eval "$listInstalledPkgCmd"
     } |
       fzf --multi \
         --prompt="Search Packages: " \
@@ -491,298 +481,215 @@ pkguninstall() {
                         echo "Hovered Packages:";
                         echo {} | tr " " "\n";
                         echo;
-                        '"$uninstallpkglisthelper"'
+                        '"$fzfPreviewInstalledPkgs"'
                     fi
         ')
-    [ -z "$selectpkg" ] && continue
-    case "$selectpkg" in
+    [ -z "$selectedPkgNames" ] && continue
+    case "$selectedPkgNames" in
     "Back") continue ;;
     *)
-      mapfile -t uninstallpkg <<<"$selectpkg"
-      uninstallcommand "${uninstallpkg[@]}"
+      mapfile -t uninstallPkgNames <<<"$selectedPkgNames"
+      uninstallListedPkgs "${uninstallPkgNames[@]}"
       return
       ;;
     esac
   done
 }
 
-pkglist() {
-  while true; do
+pids=()
 
-    pkgtype
-
-    [ -z "$pkgchoice" ] && return
-
-    case "$pkgchoice" in
-    Pacman)
-      listpkglistcommand="pacman -Qqn"
-      listpkglisthelper='pacman -Qin {1}'
-      ;;
-    AUR)
-      listpkglistcommand="$aur_helper -Qqm"
-      listpkglisthelper="$aur_helper -Qim {1} || pacman -Qim {1}"
-      ;;
-    Flatpak)
-      listpkglistcommand="flatpak list --columns=application --app | grep -v \"Application ID\""
-      listpkglisthelper='flatpak info {1}'
-      ;;
-    Back)
-      return
-      ;;
-    esac
-    local selectpkg
-    selectpkg=$({
-      printf "Back\n"
-      eval "$listpkglistcommand"
-    } |
-      fzf --multi \
-        --prompt="Search Packages: " \
-        --header="Use TAB to select, ENTER to Uninstall." \
-        --preview-window=wrap \
-        --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Selected Packages:";
-                        echo {+} | tr " " "\n";
-                        echo;
-                        echo "Hovered Packages:";
-                        echo {} | tr " " "\n";
-                        echo;
-                        '"$listpkglisthelper"'
-                    fi
-        ')
-    [ -z "$selectpkg" ] && continue
-    case "$selectpkg" in
-    "Back") continue ;;
-    *)
-      mapfile -t listpkg <<<"$selectpkg"
-      copy_pkgnames "${listpkg[@]}"
-      continue_prompt_anykey
-      return
-      ;;
-    esac
+killPIDs() {
+  for pid in "${pids[@]}"; do
+    kill -9 -"$pid" 2>/dev/null
   done
+  pids=()
 }
 
-pkgupdatecount() {
-  declare -a pids=()
+checkUpdateList() {
+  trap 'killPIDs; echo "Ctrl+C pressed, update checks stopped."; return 130' INT
 
-  kill_updates() {
-    for pid in "${pids[@]}"; do
-      kill -9 "$pid" 2>/dev/null
-    done
-    pids=()
-  }
+  local updatePkgList
+  updatePkgList=$(mktemp -u)
+  mkfifo "$updatePkgList"
 
-  trap 'kill_updates; echo "Ctrl+C pressed, update checks stopped."; return 130' INT
+  if [[ "${1}" == "fzf" ]]; then
+    echo "Back" >>$updatePkgList &
+  fi
 
-  pipe=$(mktemp -u)
-  mkfifo "$pipe"
+  checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' >>"$updatePkgList" &
+  pids+=("$!")
 
-  checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' >>"$pipe" &
-  pids+=($!)
-
-  if [ "$aur_helper" != "None" ]; then
-    "$aur_helper" -Qua --devel 2>/dev/null | grep -vF "devel check for package failed" >>"$pipe" &
-    pids+=($!)
+  if [ "$aurHelper" != "None" ]; then
+    "$aurHelper" -Qua --devel 2>/dev/null | grep -vF "devel check for package failed" >>"$updatePkgList" &
+    pids+=("$!")
   fi
 
   if command -v flatpak >/dev/null; then
     flatpak remote-ls --updates --columns=application,version 2>/dev/null |
-      grep -v "Application ID" >>"$pipe" &
-    pids+=($!)
+      grep -v "Application ID" >>"$updatePkgList" &
+    pids+=("$!")
   fi
-  cat "$pipe" | wc -l
-  rm -f "$pipe"
+
+  "$@" <"$updatePkgList"
+
+  rm -f "$updatePkgList"
 }
 
-pkgcheckupdates() {
+pkgUpdateCount() {
+  checkUpdateList wc -l
+}
+
+listUpdatePkgs() {
   while true; do
-    case "$aur_helper" in
+    case "$aurHelper" in
     "None")
-      command -v flatpak >/dev/null && checkupdatespkglisthelper="pacman -Si {1} || flatpak info {1}" || checkupdatespkglisthelper="pacman -Si {1}"
+      command -v flatpak >/dev/null && fzfPreviewUpdateListInfo="pacman -Si {1} || flatpak info {1}" || fzfPreviewUpdateListInfo="pacman -Si {1}"
       ;;
     *)
-      command -v flatpak >/dev/null && checkupdatespkglisthelper="$aur_helper -Si {1} || flatpak info {1}" || checkupdatespkglisthelper="$aur_helper -Si {1}"
+      command -v flatpak >/dev/null && fzfPreviewUpdateListInfo="$aurHelper -Si {1} || flatpak info {1}" || fzfPreviewUpdateListInfo="$aurHelper -Si {1}"
       ;;
     esac
 
-    declare -a pids=()
-
-    kill_updates() {
-      for pid in "${pids[@]}"; do
-        kill -9 "$pid" 2>/dev/null
-      done
-      pids=()
-    }
-
-    trap 'kill_updates; echo "Ctrl+C pressed, update checks stopped."; return 130' INT
-
-    pipe=$(mktemp -u)
-    mkfifo "$pipe"
-
-    echo "Back" >"$pipe" &
-
-    checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' >>"$pipe" &
-    pids+=($!)
-
-    if [ "$aur_helper" != "None" ]; then
-      "$aur_helper" -Qua --devel 2>/dev/null | grep -vF "devel check for package failed" >>"$pipe" &
-      pids+=($!)
-    fi
-
-    if command -v flatpak >/dev/null; then
-      flatpak remote-ls --updates --columns=application,version 2>/dev/null |
-        grep -v "Application ID" >>"$pipe" &
-      pids+=($!)
-    fi
-
-    local selectpkg
-    selectpkg=$(fzf --multi \
+    local selectedPkgNames
+    selectedPkgNames=$(checkUpdateList fzf --multi \
       --prompt="Search Packages: " \
-      --header="Use TAB to select, ENTER to copy." \
+      --header="Use TAB to select, ENTER to Update All Packages." \
       --preview-window=wrap \
       --preview '
             if [[ {} = "Back" ]]; then
                 echo "↩ Return to previous menu"
             else
-                '"$checkupdatespkglisthelper"'
+                '"$fzfPreviewUpdateListInfo"'
             fi
-        ' <"$pipe")
+        ')
 
-    rm -f "$pipe"
-
-    [ -z "$selectpkg" ] && {
-      kill_updates
+    [ -z "$selectedPkgNames" ] && {
+      killPIDs
       return
     }
 
-    case "$selectpkg" in
+    case "$selectedPkgNames" in
     "Back")
-      kill_updates
+      killPIDs
       return 0
       ;;
     *)
-      kill_updates
-      mapfile -t checkupdatespkg <<<"$selectpkg"
-      copy_pkgnames "${checkupdatespkg[@]}"
-      continue_prompt_anykey
+      killPIDs
+      updatePkgs
+      continuePromptAnyKey
       return 0
       ;;
     esac
   done
 }
 
-pkgupdate() {
-  update_arch() {
-    print_msg "Updating Arch repo packages with \"sudo pacman -Syu\"..."
+updatePkgs() {
+  updateArchPkgs() {
+    printMsg "Updating Arch repo packages with \"sudo pacman -Syu\"..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" \
+      inhibitSleep "System Update" "Prevent shutdown/sleep during system upgrade" \
         sudo pacman -Syu --noconfirm
     }
-    repo_update_status=$?
+    pacmanUpdateStatus=$?
   }
-
-  update_aur() {
-    print_msg "Updating AUR packages with \"$aur_helper ${aur_helper_flags[*]} -Syua\"..."
+  updateAURPkgs() {
+    printMsg "Updating AUR packages with \"$aurHelper ${aurHelperArgs[*]} -Syua\"..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" \
-        "$aur_helper" "${aur_helper_flags[@]}" -Syua
+      inhibitSleep "System Update" "Prevent shutdown/sleep during system upgrade" \
+        "$aurHelper" "${aurHelperArgs[@]}" -Syua
     }
-    aur_update_status=$?
+    AURUpdateStatus=$?
   }
-
-  update_flatpak() {
-    print_msg "Updating Flatpak packages with \"flatpak update --assumeyes\"..."
+  updateFlatpakPkgs() {
+    printMsg "Updating Flatpak packages with \"flatpak update --assumeyes\"..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibit_sleep "System Update" "Prevent shutdown/sleep during system upgrade" \
+      inhibitSleep "System Update" "Prevent shutdown/sleep during system upgrade" \
         flatpak update --assumeyes
     }
-    flatpak_update_status=$?
+    flatpakUpdateStatus=$?
   }
 
-  print_update_status() {
-    print_warn "------------------------------------------------------------------------- !"
-    if [[ $repo_update_status -eq 0 ]]; then
-      print_done "Arch repo packages updated"
-    elif [[ $repo_update_status -eq 130 ]]; then
-      print_error "Arch repo update interrupted"
+  printUpdateStatus() {
+    printWarn "------------------------------------------------------------------------- !"
+    if [[ $pacmanUpdateStatus -eq 0 ]]; then
+      printDone "Arch repo packages updated"
+    elif [[ $pacmanUpdateStatus -eq 130 ]]; then
+      printError "Arch repo update interrupted"
     else
-      print_error "Failed to update Arch repo packages"
+      printError "Failed to update Arch repo packages"
     fi
 
-    if [[ "$aur_helper" != "None" ]]; then
-      if [[ $aur_update_status -eq 0 ]]; then
-        print_done "AUR packages updated"
-      elif [[ $aur_update_status -eq 130 ]]; then
-        print_error "AUR update interrupted"
+    if [[ "$aurHelper" != "None" ]]; then
+      if [[ $AURUpdateStatus -eq 0 ]]; then
+        printDone "AUR packages updated"
+      elif [[ $AURUpdateStatus -eq 130 ]]; then
+        printError "AUR update interrupted"
       else
-        print_error "Failed to update AUR packages"
+        printError "Failed to update AUR packages"
       fi
     fi
 
     if command -v flatpak >/dev/null; then
-      if [[ $flatpak_update_status -eq 0 ]]; then
-        print_done "Flatpak packages updated"
-      elif [[ $flatpak_update_status -eq 130 ]]; then
-        print_error "Flatpak update interrupted"
+      if [[ $flatpakUpdateStatus -eq 0 ]]; then
+        printDone "Flatpak packages updated"
+      elif [[ $flatpakUpdateStatus -eq 130 ]]; then
+        printError "Flatpak update interrupted"
       else
-        print_error "Failed to update Flatpak packages"
+        printError "Failed to update Flatpak packages"
       fi
     fi
-    print_warn "------------------------------------------------------------------------- !"
+    printWarn "------------------------------------------------------------------------- !"
   }
 
   mainupdate() {
-    update_arch
-    if [[ "$aur_helper" != "None" ]]; then
-      update_aur
+    updateArchPkgs
+    if [[ "$aurHelper" != "None" ]]; then
+      updateAURPkgs
     fi
     if command -v flatpak >/dev/null; then
-      update_flatpak
+      updateFlatpakPkgs
     fi
-    print_update_status
-    continue_prompt_anykey
+    printUpdateStatus
+    continuePromptAnyKey
   }
 
   mainupdate
 }
 
-aurdeveldatagen() {
-  print_msg "Generating data for Devel Packages eg:- \"-git\" Packages"
+generateAURDevelData() {
+  printMsg "Generating data for Devel Packages eg:- \"-git\" Packages"
   {
     trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-    "$aur_helper" "${aurdeveldatagen_flags[@]}"
+    "$aurHelper" "${aurDevelDataGenArgs[@]}"
   }
-  continue_prompt_anykey
+  continuePromptAnyKey
   return
 }
 
-pkgclean() {
-  print_msg "Cleaning Package Cache"
+cheanPkgCache() {
+  printMsg "Cleaning Package Cache"
   {
     trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
     sudo rm -rfv -- /var/cache/pacman/pkg/download-*
-    if [[ "$aur_helper" = "None" ]]; then
+    if [[ "$aurHelper" = "None" ]]; then
       yes | sudo pacman -Scc
     else
-      yes | "$aur_helper" "${cleanpkg_flags[@]}"
+      yes | "$aurHelper" "${cleanPkgArgs[@]}"
     fi
     if command -v flatpak >/dev/null; then
       flatpak uninstall --unused
     fi
   }
-  continue_prompt_anykey
+  continuePromptAnyKey
   return
 }
 
-pkgorphans() {
-  local selectpkg
-  selectpkg=$({
+listOrphanPkgs() {
+  local selectedPkgNames
+  selectedPkgNames=$({
     printf "Back\n"
     pacman -Qdtq
   } |
@@ -803,29 +710,78 @@ pkgorphans() {
                 pacman -Qi {1}
             fi
     ')
-  [ -z "$selectpkg" ] && return
-  case "$selectpkg" in
+  [ -z "$selectedPkgNames" ] && return
+  case "$selectedPkgNames" in
   "Back") return ;;
   *)
-    mapfile -t orphanpkg <<<"$selectpkg"
-    uninstallcommand "${orphanpkg[@]}"
+    mapfile -t orphanPkg <<<"$selectedPkgNames"
+    selectedPkgType="Pacman" && uninstallListedPkgs "${orphanPkg[@]}"
     return
     ;;
   esac
 }
 
-pkgmenu() {
+checkMissingPkgFromGroup() {
+  listPkgGroups=$({
+    pacman -Qg | awk '!seen[$1]++ { print $1 }'
+  } |
+    fzf \
+      --prompt="Search Package Group: " \
+      --header="Press ENTER View Not Installed Packages From the Selected Group." \
+      --preview-window=wrap \
+      --preview '
+          if [[ {} = "Back" ]]; then
+              echo "↩ Return to previous menu"
+          else
+              echo "Hovered Package Group:";
+              echo {} | tr " " "\n";
+          fi
+    ')
+
+  local selectedPkgNames
+  selectedPkgNames=$({
+    comm -23 <(pacman -Sg "$listPkgGroups" | awk '{print $2}' | sort) <(pacman -Qq | sort)
+  } |
+    fzf --multi \
+      --prompt="Search Packages: " \
+      --header="Use TAB to select, ENTER to Install." \
+      --preview-window=wrap \
+      --preview '
+          if [[ {} = "Back" ]]; then
+              echo "↩ Return to previous menu"
+          else
+              echo "Selected Packages:";
+              echo {+} | tr " " "\n";
+              echo;
+              echo "Hovered Packages:";
+              echo {} | tr " " "\n";
+              echo;
+              pacman -Si {1}
+          fi
+  ')
+  [ -z "$selectedPkgNames" ] && return
+  case "$selectedPkgNames" in
+  "Back") return ;;
+  *)
+    mapfile -t missingPkgNames <<<"$selectedPkgNames"
+    selectedPkgType="Pacman" && installListedPkgs "${missingPkgNames[@]}"
+    return
+    ;;
+  esac
+}
+
+pkgMenu() {
   while true; do
-    pkgmanager=$(
+    pkgManager=$(
       {
         printf "Install Packages\n"
         printf "Uninstall Packages\n"
         printf "Check Updates\n"
         printf "Update System\n"
-        printf "List Packages\n"
+        printf "Check Missing Package From Package Group\n"
         printf "List Orphan Packages\n"
-        printf "Clean Packages\n"
-        if [[ "$aur_helper" != "None" ]]; then
+        printf "Clean Package Cache\n"
+        if [[ "$aurHelper" != "None" ]]; then
           printf "Generate devel Data For AUR Helpers\n"
         fi
         printf "Change AUR Helper\n"
@@ -835,8 +791,8 @@ pkgmenu() {
           --header="Select Operation: " \
           --preview-window=wrap \
           --preview '
-                printf '"'AUR Helper = %s\n'"' '"$aur_helper"'
-                if [[ '"$aur_helper"' = "None" ]]; then
+                printf '"'AUR Helper = %s\n'"' '"$aurHelper"'
+                if [[ '"$aurHelper"' = "None" ]]; then
                   echo "\nPacman-only mode"
                 fi
                 echo;
@@ -848,17 +804,17 @@ pkgmenu() {
                 fi
         '
     )
-    [ -z "$pkgmanager" ] && return
-    case "$pkgmanager" in
-    "Install Packages") pkginstall ;;
-    "Uninstall Packages") pkguninstall ;;
-    "Check Updates") pkgcheckupdates ;;
-    "Update System") pkgupdate ;;
-    "List Packages") pkglist ;;
-    "List Orphan Packages") pkgchoice="Orphan" && pkgorphans ;;
-    "Clean Packages") pkgclean ;;
-    "Generate devel Data For AUR Helpers") aurdeveldatagen ;;
-    "Change AUR Helper") aursetup --forcereset && continue ;;
+    [ -z "$pkgManager" ] && return
+    case "$pkgManager" in
+    "Install Packages") listRemotePkgs ;;
+    "Uninstall Packages") listInstalledPkgs ;;
+    "Check Updates") listUpdatePkgs ;;
+    "Update System") updatePkgs ;;
+    "Check Missing Package From Package Group") checkMissingPkgFromGroup ;;
+    "List Orphan Packages") listOrphanPkgs ;;
+    "Clean Packages") cheanPkgCache ;;
+    "Generate Devel Data For AUR Helpers") generateAURDevelData ;;
+    "Change AUR Helper") aurSetup --forcereset && continue ;;
     "Exit") break ;;
     esac
   done
@@ -866,21 +822,21 @@ pkgmenu() {
 
 case "$1" in
 "--help" | "-h")
-  precheck "$@"
+  preCheck "$@"
   helptext
   ;;
 "--update")
-  precheck "$@"
-  aursetup
-  pkgupdate
+  preCheck "$@"
+  aurSetup
+  updatePkgs
   ;;
 "--updatecount")
-  aursetup
-  pkgupdatecount
+  aurSetup
+  pkgUpdateCount
   ;;
 *)
-  precheck "$@"
-  aursetup
-  pkgmenu
+  preCheck "$@"
+  aurSetup
+  pkgMenu
   ;;
 esac
