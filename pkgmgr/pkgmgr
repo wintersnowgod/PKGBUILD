@@ -496,43 +496,45 @@ listInstalledPkgs() {
   done
 }
 
-pids=()
-
-killPIDs() {
-  for pid in "${pids[@]}"; do
-    kill -9 -"$pid" 2>/dev/null
+cleanup() {
+  local pid=${1:-$$}
+  local children
+  children=$(pgrep -P "$pid" 2>/dev/null)
+  for child in $children; do
+    cleanup "$child"
   done
-  pids=()
+  # Kill the process itself, but never the script's main PID
+  if [[ "$pid" != "$$" ]]; then
+    kill -9 "$pid" 2>/dev/null
+  fi
 }
 
 checkUpdateList() {
-  trap 'killPIDs; echo "Ctrl+C pressed, update checks stopped."; return 130' INT
+  trap 'cleanup; echo "Ctrl+C pressed, update checks stopped."; return 130' INT
 
   local updatePkgList
   updatePkgList=$(mktemp -u)
   mkfifo "$updatePkgList"
 
   if [[ "${1}" == "fzf" ]]; then
-    echo "Back" >>$updatePkgList &
+    echo "Back" >>"$updatePkgList" &
   fi
 
-  checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' >>"$updatePkgList" &
-  pids+=("$!")
+  { checkupdates 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' >>"$updatePkgList"; } &
 
   if [ "$aurHelper" != "None" ]; then
-    "$aurHelper" -Qua --devel 2>/dev/null | grep -vF "devel check for package failed" >>"$updatePkgList" &
-    pids+=("$!")
+    { "$aurHelper" -Qua --devel 2>/dev/null | grep -vF "devel check for package failed" >>"$updatePkgList"; } &
   fi
 
   if command -v flatpak >/dev/null; then
-    flatpak remote-ls --updates --columns=application,version 2>/dev/null |
-      grep -v "Application ID" >>"$updatePkgList" &
-    pids+=("$!")
+    { flatpak remote-ls --updates --columns=application,version 2>/dev/null | grep -v "Application ID" >>"$updatePkgList"; } &
   fi
 
   "$@" <"$updatePkgList"
-
+  local cmdStatus=$?
+  cleanup
   rm -f "$updatePkgList"
+  return $cmdStatus
 }
 
 pkgUpdateCount() {
@@ -563,21 +565,15 @@ listUpdatePkgs() {
             fi
         ')
 
-    [ -z "$selectedPkgNames" ] && {
-      killPIDs
-      return
-    }
+    [ -z "$selectedPkgNames" ] && return
 
     case "$selectedPkgNames" in
     "Back")
-      killPIDs
-      return 0
+      return
       ;;
     *)
-      killPIDs
       updatePkgs
-      continuePromptAnyKey
-      return 0
+      return
       ;;
     esac
   done
@@ -829,6 +825,11 @@ case "$1" in
   preCheck "$@"
   aurSetup
   updatePkgs
+  ;;
+"--listupdates")
+  preCheck "$@"
+  aurSetup
+  listUpdatePkgs
   ;;
 "--updatecount")
   aurSetup
