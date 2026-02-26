@@ -665,7 +665,7 @@ generateAURDevelData() {
   return
 }
 
-cheanPkgCache() {
+cleanPkgCache() {
   printMsg "Cleaning Package Cache"
   {
     trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
@@ -808,7 +808,7 @@ pkgMenu() {
     "Update System") updatePkgs ;;
     "Check Missing Package From Package Group") checkMissingPkgFromGroup ;;
     "List Orphan Packages") listOrphanPkgs ;;
-    "Clean Packages") cheanPkgCache ;;
+    "Clean Package Cache") cleanPkgCache ;;
     "Generate Devel Data For AUR Helpers") generateAURDevelData ;;
     "Change AUR Helper") aurSetup --forcereset && continue ;;
     "Exit") break ;;
