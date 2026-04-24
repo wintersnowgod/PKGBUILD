@@ -1,6 +1,6 @@
 pkgbase = plasma6-applets-docker-companion
 	pkgdesc = A docker companion right in your system tray - KDE plasma 6 plasmoid.
-	pkgver = 1.0.0
+	pkgver = 1.2.0
 	pkgrel = 1
 	url = https://github.com/results-may-vary-org/docker-companion
 	arch = any
@@ -19,7 +19,7 @@ pkgbase = plasma6-applets-docker-companion
 	provides = plasma6-applets-docker-companion
 	conflicts = plasma6-applets-docker-companion-bin
 	conflicts = plasma6-applets-docker-companion-git
-	source = docker-companion-1.0.0.tar.gz::https://github.com/results-may-vary-org/docker-companion/archive/refs/tags/v1.0.0.tar.gz
-	sha256sums = 5b169cf370b20c305e086af4d4013dcfe4536d8acdd6235b13e415e9769a39a8
+	source = docker-companion-1.2.0.tar.gz::https://github.com/results-may-vary-org/docker-companion/archive/refs/tags/v1.2.0.tar.gz
+	sha256sums = ff059eca3fd123bdd134481388b7c3fd5300c44e4d9ce021425bdcdb077534d5
 
 pkgname = plasma6-applets-docker-companion
