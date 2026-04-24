@@ -1,6 +1,6 @@
 pkgbase = plasma6-applets-apdatifier
 	pkgdesc = KDE Plasma widget that tracks updates for ArchLinux, Plasma Widgets, and Flatpak, providing notifications for new ones.
-	pkgver = 2.9.7.1
+	pkgver = 2.9.8
 	pkgrel = 1
 	url = https://github.com/exequtic/apdatifier
 	arch = any
@@ -29,9 +29,7 @@ pkgbase = plasma6-applets-apdatifier
 	provides = plasma6-applets-apdatifier
 	conflicts = plasma6-applets-apdatifier-bin
 	conflicts = plasma6-applets-apdatifier-git
-	source = apdatifier-2.9.7.1.tar.gz::https://github.com/exequtic/apdatifier/archive/refs/tags/2.9.7.1.tar.gz
-	source = fixsysteminstallation.patch
-	sha256sums = eb34723147e157e050583d0186081ce6955103715815addae088c7da3b82a0f6
-	sha256sums = d780f82c309db94a3e800acfadf2720e26445675b415524e5dfc3c3aaa5c1125
+	source = apdatifier-2.9.8.tar.gz::https://github.com/exequtic/apdatifier/archive/refs/tags/2.9.8.tar.gz
+	sha256sums = 6a0901d63f758d26abf0cf5328ca3ba4e54ed0e02b1078e12fc0e44d25b7ac6a
 
 pkgname = plasma6-applets-apdatifier
