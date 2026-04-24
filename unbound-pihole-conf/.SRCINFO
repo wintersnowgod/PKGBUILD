@@ -1,0 +1,10 @@
+pkgbase = unbound-pihole-conf
+	pkgdesc = Conf file for unbound in pihole
+	pkgver = 1
+	pkgrel = 1
+	arch = any
+	depends = polkit
+	source = pi-hole.conf
+	sha256sums = c170e82a620dc57422198bb47c027e3985a932d4d8462c09d501649cc0da71ee
+
+pkgname = unbound-pihole-conf

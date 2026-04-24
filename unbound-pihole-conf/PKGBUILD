@@ -1,0 +1,14 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=unbound-pihole-conf
+pkgver=1
+pkgrel=1
+pkgdesc="Conf file for unbound in pihole"
+arch=('any')
+depends=('polkit')
+source=("pi-hole.conf")
+sha256sums=('c170e82a620dc57422198bb47c027e3985a932d4d8462c09d501649cc0da71ee')
+
+package() {
+  install -d -m755 "$pkgdir/etc/unbound/conf.d"
+  install -Dm644 "${srcdir}/pi-hole.conf" "${pkgdir}/etc/unbound/conf.d/pi-hole.conf"
+}
