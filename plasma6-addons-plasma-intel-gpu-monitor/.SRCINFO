@@ -1,6 +1,6 @@
 pkgbase = plasma6-applets-plasma-intel-gpu-monitor
 	pkgdesc = KDE Plasma Widget that displays Intel GPU usage including whether or not video acceleration is being used.
-	pkgver = 0.3.2
+	pkgver = 0.3.3
 	pkgrel = 1
 	url = https://github.com/luisbocanegra/plasma-intel-gpu-monitor
 	install = plasma-intel-gpu-monitor.install
@@ -20,10 +20,10 @@ pkgbase = plasma6-applets-plasma-intel-gpu-monitor
 	provides = plasma6-applets-plasma-intel-gpu-monitor
 	conflicts = plasma6-applets-plasma-intel-gpu-monitor-bin
 	conflicts = plasma6-applets-plasma-intel-gpu-monitor-git
-	source = plasma-intel-gpu-monitor-0.3.2.tar.gz::https://github.com/luisbocanegra/plasma-intel-gpu-monitor/archive/refs/tags/v0.3.2.tar.gz
+	source = plasma-intel-gpu-monitor-0.3.3.tar.gz::https://github.com/luisbocanegra/plasma-intel-gpu-monitor/archive/refs/tags/v0.3.3.tar.gz
 	source = setcap_intel_gpu_top.service
 	source = 99-sysctl-paranoid.conf
-	sha256sums = 22738816f6d9ad463529e433adb0e02fcd2b9185510f00cd68a320fd1bf24925
+	sha256sums = 330a70f492b4aad2de7bbbee07b710bda5d1d5175df4173bfc7951ebae3c6b18
 	sha256sums = bac6f95b1566d86de3f829207940505230a96824470a0b812c7f6405c7e42771
 	sha256sums = 149b9569ca9bcb9545b54df2d12e2d69d53db14ec0737bdc2042f478b96bee37
 
