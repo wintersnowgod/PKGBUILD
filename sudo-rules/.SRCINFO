@@ -1,0 +1,9 @@
+pkgbase = sudo-rules
+	pkgdesc = My custom sudo rules
+	pkgver = 1
+	pkgrel = 1
+	arch = any
+	source = 10-custom
+	sha256sums = d2afc77d359a0fdb21aa4f57a83d0502eaa4333d03a54b0522ea4b0a8f9d703d
+
+pkgname = sudo-rules

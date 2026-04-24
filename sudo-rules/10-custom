@@ -1,0 +1,5 @@
+Defaults rootpw
+Defaults insults
+Defaults pwfeedback
+
+%wheel ALL=(ALL:ALL) ALL

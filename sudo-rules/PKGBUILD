@@ -1,0 +1,13 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=sudo-rules
+pkgver=1
+pkgrel=1
+pkgdesc="My custom sudo rules"
+arch=('any')
+source=("10-custom")
+sha256sums=('d2afc77d359a0fdb21aa4f57a83d0502eaa4333d03a54b0522ea4b0a8f9d703d')
+
+package() {
+  install -d -m750 "${pkgdir}/etc/sudoers.d"
+  install -m440 "${srcdir}/10-custom" "${pkgdir}/etc/sudoers.d/10-custom"
+}
