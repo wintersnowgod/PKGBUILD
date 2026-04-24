@@ -1,0 +1,9 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=screen-toolkit-dependencies
+pkgver=1
+pkgrel=1
+pkgdesc="Dependencies required for screen-toolkit."
+arch=('any')
+url="https://github.com/noctalia-dev/noctalia-plugins/tree/main/screen-toolkit"
+license=('GPL')
+depends=(grim slurp wl-clipboard tesseract tesseract-data-eng imagemagick zbar curl translate-shell wl-screenrec ffmpeg gifski)
