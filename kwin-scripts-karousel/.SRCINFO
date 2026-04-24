@@ -1,0 +1,16 @@
+pkgbase = kwin-scripts-karousel
+	pkgdesc = Scrollable tiling Kwin script.
+	pkgver = 0.16
+	pkgrel = 1
+	url = https://github.com/peterfajdiga/karousel
+	arch = any
+	license = GPL-3.0
+	makedepends = kpackage
+	makedepends = typescript
+	makedepends = nodejs
+	makedepends = npm
+	depends = kwin
+	source = karousel-0.16.tar.gz::https://github.com/peterfajdiga/karousel/archive/v0.16.tar.gz
+	sha256sums = 3615ccbf643a39c59bbda0cc13392235c278b2fa2644c1a8b330bdd5f41a7680
+
+pkgname = kwin-scripts-karousel

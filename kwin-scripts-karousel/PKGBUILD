@@ -1,0 +1,23 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=kwin-scripts-karousel
+_pkgname=karousel
+pkgver=0.16
+pkgrel=1
+pkgdesc="Scrollable tiling Kwin script."
+arch=('any')
+url="https://github.com/peterfajdiga/karousel"
+license=('GPL-3.0')
+depends=('kwin')
+makedepends=('kpackage' 'typescript' 'nodejs' 'npm')
+source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+sha256sums=('3615ccbf643a39c59bbda0cc13392235c278b2fa2644c1a8b330bdd5f41a7680')
+
+build() {
+  cd ${srcdir}/${_pkgname}-${pkgver}
+  make
+}
+
+package() {
+  cd "${_pkgname}-${pkgver}"
+  kpackagetool6 --type=KWin/Script -p ${pkgdir}/usr/share/kwin/scripts -i ${srcdir}/${_pkgname}-${pkgver}/package
+}
