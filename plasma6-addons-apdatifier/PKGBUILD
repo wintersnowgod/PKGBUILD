@@ -1,7 +1,7 @@
 # Maintainer: wintersnowgod <git.xerox732@passinbox.com>
 _pkgname=apdatifier
 pkgname=plasma6-applets-apdatifier
-pkgver=2.9.8
+pkgver=2.9.9
 pkgrel=1
 pkgdesc="KDE Plasma widget that tracks updates for ArchLinux, Plasma Widgets, and Flatpak, providing notifications for new ones."
 arch=('any')
@@ -20,7 +20,7 @@ optdepends=('yay: For AUR updates support'
   'tmux: For upgrade and management in a terminal multiplexer'
   'fzf: For interactive package selection in management')
 source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/${pkgver}.tar.gz")
-sha256sums=('6a0901d63f758d26abf0cf5328ca3ba4e54ed0e02b1078e12fc0e44d25b7ac6a')
+sha256sums=('9d4adf9f3d5be6b0d866175c9558f1e006552de3b5776aced640bd666df16926')
 
 build() {
   local base="${srcdir}/${_pkgname}-${pkgver}/package"
