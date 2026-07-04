@@ -1,0 +1,24 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=kwin-scripts-workspace_manager-git
+_pkgname=workspace_manager
+pkgver=r68.1851a47
+pkgrel=1
+pkgdesc="A configurable KWin script to dynamically manage Virtual Desktops in a 2D Grid and more. "
+arch=('any')
+url="https://github.com/douakli/workspace_manager"
+license=('MIT')
+depends=('kwin' 'qt6-declarative')
+makedepends=('kpackage')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+provides=('kwin-scripts-workspace_manager')
+conflicts=('kwin-scripts-workspace_manager' 'kwin-scripts-workspace_manager-bin')
+
+pkgver() {
+  cd "${srcdir}/${_pkgname}"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  kpackagetool6 --type=KWin/Script -p ${pkgdir}/usr/share/kwin/scripts -i ${srcdir}/${_pkgname}
+}

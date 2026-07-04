@@ -1,0 +1,17 @@
+pkgbase = kwin-scripts-workspace_manager-git
+	pkgdesc = A configurable KWin script to dynamically manage Virtual Desktops in a 2D Grid and more.
+	pkgver = 1.0.2
+	pkgrel = 1
+	url = https://github.com/douakli/workspace_manager
+	arch = any
+	license = MIT
+	makedepends = kpackage
+	depends = kwin
+	depends = qt6-declarative
+	provides = kwin-scripts-workspace_manager
+	conflicts = kwin-scripts-workspace_manager
+	conflicts = kwin-scripts-workspace_manager-bin
+	source = git+https://github.com/douakli/workspace_manager.git
+	sha256sums = SKIP
+
+pkgname = kwin-scripts-workspace_manager-git
