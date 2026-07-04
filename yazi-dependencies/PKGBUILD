@@ -1,0 +1,9 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=yazi-dependencies
+pkgver=1
+pkgrel=1
+pkgdesc="Optional dependencies required for yazi."
+arch=('any')
+url="https://github.com/sxyazi/yazi"
+license=('GPL')
+depends=('chafa' 'resvg' 'jq' 'poppler' 'fd' 'ffmpeg' '7zip' 'ripgrep' 'xclip' 'imagemagick' 'wl-clipboard' 'yazi')
