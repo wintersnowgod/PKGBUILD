@@ -6,5 +6,5 @@ pkgdesc="Dependencies required for lazyvim."
 arch=('any')
 url="lazyvim.org"
 license=('GPL')
-depends=('git' 'lazygit' 'curl' 'fzf' 'ripgrep' 'fd' 'gcc' 'wl-clipboard' 'xclip')
+depends=('git' 'lazygit' 'curl' 'fzf' 'ripgrep' 'fd' 'gcc' 'wl-clipboard' 'xclip' 'tree-sitter-cli' 'npm')
 optdepends=('nerd-fonts: Optional, but needed.')
