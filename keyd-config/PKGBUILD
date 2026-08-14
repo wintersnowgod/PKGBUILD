@@ -1,0 +1,19 @@
+# Maintainer: wintersnowgod <git.xerox732@passinbox.com>
+pkgname=keyd-config
+pkgver=1
+pkgrel=1
+pkgdesc="Config files for keyd."
+arch=('any')
+url="https://github.com/rvaiya/keyd"
+license=('MIT')
+source=("metascroll.conf")
+sha256sums=('a5b3b2bd1be8fe229f34321601fe5262c72bc2eccd3663ce18c0975805d2e4c6')
+install=${pkgname}.install
+depends=('keyd')
+
+package() {
+  for conf in "${srcdir}"/*.conf; do
+    [[ -f "$conf" ]] || continue
+    install -Dm644 "$conf" "${pkgdir}/etc/keyd/$(basename "$conf")"
+  done
+}
