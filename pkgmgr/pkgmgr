@@ -147,21 +147,28 @@ aurSetup() {
   aurArgs
 }
 
-inhibitSleep() {
-  if command -v systemd-inhibit >/dev/null 2>&1; then
-    printWarn "Inhibiting Sleep using \"systemd-inhibit\"."
-    local who="$1"
-    local why="$2"
-    shift 2
-    systemd-inhibit --what=idle:sleep \
-      --who="$who" \
-      --why="$why" \
-      "$@"
-  else
-    printWarn "\"systemd-inhibit\" command not found. Unable to Inhibit Sleep."
-    shift 2
-    "$@"
-  fi
+inhibitSleepStart() {
+    if command -v systemd-inhibit >/dev/null 2>&1; then
+        printWarn "Inhibiting Sleep using \"systemd-inhibit\"."
+        systemd-inhibit \
+            --what=idle:sleep \
+            --who="$1" \
+            --why="$2" \
+            sleep infinity &
+
+        inhibitSleepPid=$!
+    else
+        printWarn "\"systemd-inhibit\" command not found. Unable to Inhibit Sleep."
+        inhibitSleepPid=
+    fi
+}
+
+inhibitSleepStop() {
+    if [[ -n "$inhibitSleepPid" ]]; then
+        kill "$inhibitSleepPid" 2>/dev/null
+        wait "$inhibitSleepPid" 2>/dev/null
+        inhibitSleepPid=
+    fi
 }
 
 continuePromptAnyKey() {
@@ -196,9 +203,7 @@ installListedPkgs() {
     printMsg "Installing Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibitSleep "Installing Package" \
-        "Prevent shutdown/sleep during package installation" \
-        sudo pacman -S --noconfirm "$@"
+      sudo pacman -S --noconfirm "$@"
     }
     installStatus=$?
     ;;
@@ -206,9 +211,7 @@ installListedPkgs() {
     printMsg "Installing Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibitSleep "Installing Package" \
-        "Prevent shutdown/sleep during package installation" \
-        "$aurHelper" "${aurHelperArgs[@]}" -S "$@"
+      "$aurHelper" "${aurHelperArgs[@]}" -S "$@"
     }
     installStatus=$?
     ;;
@@ -219,9 +222,7 @@ installListedPkgs() {
       local entry app repo _
       for entry in "$@"; do
         read -r app repo _ <<<"$entry"
-        inhibitSleep "Installing Package" \
-          "Prevent shutdown/sleep during package installation" \
-          flatpak install --assumeyes "$repo" "$app"
+        flatpak install --assumeyes "$repo" "$app"
       done
     }
     installStatus=$?
@@ -244,9 +245,7 @@ uninstallListedPkgs() {
     printMsg "Uninstalling Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibitSleep "Installing Package" \
-        "Prevent shutdown/sleep during package installation" \
-        sudo pacman -Rns --noconfirm "$@"
+      sudo pacman -Rns --noconfirm "$@"
     }
     uninstallStatus=$?
     ;;
@@ -254,9 +253,7 @@ uninstallListedPkgs() {
     printMsg "Uninstalling Packages..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibitSleep "Uninstalling Package" \
-        "Prevent shutdown/sleep during package Uninstallation" \
-        "$aurHelper" -Rns --noconfirm "$@"
+      "$aurHelper" -Rns --noconfirm "$@"
     }
     uninstallStatus=$?
     ;;
@@ -270,9 +267,7 @@ uninstallListedPkgs() {
       for flatpakUninstallPkgNames in "$@"; do
         [[ -z "$flatpakUninstallPkgNames" ]] && continue
         printMsg "Uninstalling $flatpakUninstallPkgNames..."
-        inhibitSleep "Installing Package" \
-          "Prevent shutdown/sleep during package installation" \
-          flatpak uninstall --assumeyes "$flatpakUninstallPkgNames"
+        flatpak uninstall --assumeyes "$flatpakUninstallPkgNames"
         flatpakUninstallStatus=$?
         if [[ $flatpakUninstallStatus -eq 0 ]]; then
           printDone "$flatpakUninstallPkgNames uninstalled successfully"
@@ -431,8 +426,11 @@ listRemotePkgs() {
       ;;
     *)
       mapfile -t installPkgNames <<<"$selectedPkgNames"
+      inhibitSleepStart "Installing Package" "Prevent shutdown/sleep during package installation"
       installListedPkgs "${installPkgNames[@]}"
-      return
+      local installListedPkgsStatus=$?
+      inhibitSleepStop
+      return "$installListedPkgsStatus"
       ;;
     esac
   done
@@ -489,8 +487,11 @@ listInstalledPkgs() {
     "Back") continue ;;
     *)
       mapfile -t uninstallPkgNames <<<"$selectedPkgNames"
+      inhibitSleepStart "Uninstalling Package" "Prevent shutdown/sleep during package Uninstallation"
       uninstallListedPkgs "${uninstallPkgNames[@]}"
-      return
+      local uninstallListedPkgsStatus=$?
+      inhibitSleepStop
+      return "$uninstallListedPkgsStatus"
       ;;
     esac
   done
@@ -579,13 +580,12 @@ listUpdatePkgs() {
   done
 }
 
-updatePkgs() {
+updateAllPkgs() {
   updateArchPkgs() {
     printMsg "Updating Arch repo packages with \"sudo pacman -Syu\"..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibitSleep "System Update" "Prevent shutdown/sleep during system upgrade" \
-        sudo pacman -Syu --noconfirm
+      sudo pacman -Syu --noconfirm
     }
     pacmanUpdateStatus=$?
   }
@@ -593,8 +593,7 @@ updatePkgs() {
     printMsg "Updating AUR packages with \"$aurHelper ${aurHelperArgs[*]} -Syua\"..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibitSleep "System Update" "Prevent shutdown/sleep during system upgrade" \
-        "$aurHelper" "${aurHelperArgs[@]}" -Syua
+      "$aurHelper" "${aurHelperArgs[@]}" -Syua
     }
     AURUpdateStatus=$?
   }
@@ -602,8 +601,7 @@ updatePkgs() {
     printMsg "Updating Flatpak packages with \"flatpak update --assumeyes\"..."
     {
       trap 'pkill sudo; echo Ctrl+C pressed; return 130' INT
-      inhibitSleep "System Update" "Prevent shutdown/sleep during system upgrade" \
-        flatpak update --assumeyes
+      flatpak update --assumeyes
     }
     flatpakUpdateStatus=$?
   }
@@ -652,7 +650,11 @@ updatePkgs() {
     continuePromptAnyKey
   }
 
+  inhibitSleepStart "System Update" "Prevent shutdown/sleep during system upgrade"
   mainupdate
+  local updateAllPkgsStatus=$?
+  inhibitSleepStop
+  return "$updateAllPkgsStatus"
 }
 
 generateAURDevelData() {
@@ -805,7 +807,7 @@ pkgMenu() {
     "Install Packages") listRemotePkgs ;;
     "Uninstall Packages") listInstalledPkgs ;;
     "Check Updates") listUpdatePkgs ;;
-    "Update System") updatePkgs ;;
+    "Update System") updateAllPkgs ;;
     "Check Missing Package From Package Group") checkMissingPkgFromGroup ;;
     "List Orphan Packages") listOrphanPkgs ;;
     "Clean Package Cache") cleanPkgCache ;;
