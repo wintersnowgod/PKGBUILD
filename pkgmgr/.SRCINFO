@@ -10,7 +10,7 @@ pkgbase = pkgmgr
 	optdepends = wl-copy: For Wayland Copy to clipboard
 	source = pkgmgr
 	source = pkgmgr.desktop
-	sha256sums = 355aceb5b38c6bef9a29bddf6d7706a7faeddcc4237cfce36c306fe1a236142d
+	sha256sums = bea54aab9886d80bbf2ee205a037708f94a3fcdf585d01ecca995c1dfdb5f2c8
 	sha256sums = 93caa3f225a3e191b5c2534303c711ea586a95898a741f7fbc3300a5e8cc0c11
 
 pkgname = pkgmgr
