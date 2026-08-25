@@ -48,7 +48,7 @@ printEnd() {
 }
 
 preCheck() {
-  if [[ ! -t 1 ]]; then
+  if [[ ! -t 0 || ! -t 1 ]]; then
     if command -v alacritty >/dev/null; then
       exec alacritty -e bash "$0" "$@"
     elif command -v kitty >/dev/null; then
@@ -69,6 +69,11 @@ preCheck() {
     read -r
     exit 1
   fi
+
+  if ! command -v fzf >/dev/null 2>&1; then
+    printError "\"fzf\" is required."
+    exit 1
+  fi
 }
 
 helptext() {
@@ -83,7 +88,8 @@ aurSetup() {
   forceAurHelperCacheReset="$1"
   aurDetect() {
     aurHelperCacheFile="${XDG_CACHE_HOME:-$HOME/.cache}/aurHelper"
-    if [ "$forceAurHelperCacheReset" != "--forcereset" ]; then
+    mkdir -p "$(dirname "$aurHelperCacheFile")"
+    if [[ $forceAurHelperCacheReset != --forcereset ]]; then
       if [ -f "$aurHelperCacheFile" ]; then
         savedAURHelper=$(<"$aurHelperCacheFile")
         if command -v "$savedAURHelper" >/dev/null 2>&1; then
@@ -175,153 +181,196 @@ inhibitSleepStop() {
 }
 
 continuePromptAnyKey() {
-  printEnd "Press any key to Continue"
-  trap 'echo "Ctrl+C pressed"; inhibitSleepStop; anyKeyPromptStatus=130' INT
-  read -n1 -r
-  trap - INT
-  if [[ -z "$anyKeyPromptStatus" ]] || [[ $anyKeyPromptStatus -eq 130 ]]; then
-    unset anyKeyPromptStatus
-    return
-  fi
+    printEnd "Press any key to Continue"
+    trap 'inhibitSleepStop; trap - INT; return 130' INT
+    read -n1 -r
+    trap - INT
 }
 
 copyPkgNames() {
-  if command -v wl-copy >/dev/null 2>&1; then
-    echo "$@" | wl-copy 2>/dev/null && printDone "Copied Package Names to clipboard"
-    echo "$@"
-  elif command -v xclip >/dev/null 2>&1; then
-    echo "$@" | xclip -selection clipboard 2>/dev/null && printDone "Copied Package Names to clipboard"
-    echo "$@"
-  else
-    printError "\"wl-copy\" or \"xclip\" not found. Install either one to copy the Package Names.\n\nSelected Packages:"
-    echo "$@"
-  fi
+    if command -v wl-copy >/dev/null 2>&1; then
+        printf '%s\n' "$@" | wl-copy 2>/dev/null &&
+            printDone "Copied Package Names to clipboard"
+        printf '%s\n' "$@"
+    elif command -v xclip >/dev/null 2>&1; then
+        printf '%s\n' "$@" | xclip -selection clipboard 2>/dev/null &&
+            printDone "Copied Package Names to clipboard"
+        printf '%s\n' "$@"
+    else
+        printError "\"wl-copy\" or \"xclip\" not found. Install either one to copy the Package Names.\n\nSelected Packages:"
+        printf '%s\n' "$@"
+    fi
 }
 
-installListedPkgs() {
-  local installStatus
-  case "$selectedPkgType" in
-  Pacman)
-    printMsg "Installing Packages..."
-    trap 'echo "Ctrl+C pressed"; installStatus=130' INT
-    sudo pacman -S --noconfirm "$@"
-    local cmdStatus=$?
-    trap - INT
-    ;;
-  AUR)
-    printMsg "Installing Packages..."
-    trap 'echo "Ctrl+C pressed"; installStatus=130' INT
-    "$aurHelper" "${aurHelperArgs[@]}" -S "$@"
-    local cmdStatus=$?
-    trap - INT
-    ;;
-  Flatpak)
-    printMsg "Installing Packages..."
-    trap 'echo "Ctrl+C pressed"; installStatus=130' INT
-    local entry app repo _
-    for entry in "$@"; do
-      read -r app repo _ <<<"$entry"
-      flatpak install --assumeyes "$repo" "$app"
-    done
-    local cmdStatus=$?
-    trap - INT
-    ;;
-  esac
-
-  if [[ -z "$installStatus" ]]; then
-    installStatus="$cmdStatus"
-  fi
-
-  if [[ $installStatus -eq 0 ]]; then
-    printDone "Successfully Installed Packages"
-  elif [[ $installStatus -eq 130 ]]; then
-    printError "Package Install interrupted"
-  else
-    printError "Failed to Install Packages"
-  fi
+installPacmanPkgs() {
+  printMsg "Installing Packages $*..."
+  trap 'trap - INT; return 130' INT
+  sudo pacman -S --noconfirm "$@"
+  local status=$?
+  trap - INT
+  return "$status"
 }
 
-uninstallListedPkgs() {
-  local uninstallStatus
-  case "$selectedPkgType" in
-  Pacman)
-    printMsg "Uninstalling Packages..."
-    trap 'echo "Ctrl+C pressed"; uninstallStatus=130' INT
-    sudo pacman -Rns --noconfirm "$@"
-    local cmdStatus=$?
-    trap - INT
-    ;;
-  AUR)
-    printMsg "Uninstalling Packages..."
+installAURPkgs() {
+  printMsg "Installing Packages $*..."
+  trap 'trap - INT; return 130' INT
+  "$aurHelper" "${aurHelperArgs[@]}" -S "$@"
+  local status=$?
+  trap - INT
+  return "$status"
+}
 
-    trap 'echo "Ctrl+C pressed"; uninstallStatus=130' INT
-    "$aurHelper" -Rns --noconfirm "$@"
-    local cmdStatus=$?
-    trap - INT
-    ;;
-  Flatpak)
-    printMsg "Uninstalling Packages..."
-    trap 'echo "Ctrl+C pressed"; uninstallStatus=130' INT
-    flatpakUninstallSuccessPkgNames=()
-    flatpakUninstallFailedPkgNames=()
+installFlatpakPkgs() {
+  local entry app repo branch arch
+  local status
 
-    for flatpakUninstallPkgNames in "$@"; do
-      [[ -z "$flatpakUninstallPkgNames" ]] && continue
-      printMsg "Uninstalling $flatpakUninstallPkgNames..."
-      flatpak uninstall --assumeyes "$flatpakUninstallPkgNames"
-      flatpakUninstallStatus=$?
-      if [[ $flatpakUninstallStatus -eq 0 ]]; then
-        printDone "$flatpakUninstallPkgNames uninstalled successfully"
-        flatpakUninstallSuccessPkgNames+=("$flatpakUninstallPkgNames")
-      else
-        printError "Failed to uninstall $flatpakUninstallPkgNames"
-        flatpakUninstallFailedPkgNames+=("$flatpakUninstallPkgNames")
-      fi
+  for entry in "$@"; do
+    read -r app repo branch arch <<<"$entry"
+
+    printMsg "Installing Package $app/$arch/$branch from $repo..."
+
+    trap 'trap - INT; return 130' INT
+
+    case "$selectedflatpakInstallType" in
+    System)
+      flatpak --system install --assumeyes \
+        "$repo" "$app/$arch/$branch"
+      ;;
+
+    User)
+      flatpak --user install --assumeyes \
+        "$repo" "$app/$arch/$branch"
+      ;;
+    esac
+
+    status=$?
+    trap - INT
+
+    [[ $status -ne 0 ]] && return "$status"
+  done
+
+  return 0
+}
+
+uninstallPacmanPkgs() {
+  printMsg "Uninstalling Packages $*..."
+  trap 'trap - INT; return 130' INT
+  sudo pacman -Rns --noconfirm "$@"
+  local status=$?
+  trap - INT
+  return "$status"
+}
+
+uninstallAURPkgs() {
+  printMsg "Uninstalling Packages $*..."
+  trap 'trap - INT; return 130' INT
+  "$aurHelper" -Rns --noconfirm "$@"
+  local status=$?
+  trap - INT
+  return "$status"
+}
+
+uninstallFlatpakPkgs() {
+  flatpakUninstallSuccessPkgNames=()
+  flatpakUninstallFailedPkgNames=()
+  flatpakUninstallFailedAppDataPkgNames=()
+
+  local flatpakUninstallPkgName
+  local flatpakUninstallStatus
+  local flatpakDataDir
+  local flatpakAppDataStatus
+  local ans
+  local flatpakUninstallProcessedAppDataPkgNames=()
+  local flatpakUninstallProcessedAppDataPkgName
+
+  trap '
+    flatpakUninstallFailedPkgNames=("$@")
+
+    for flatpakUninstallSuccessPkgName in "${flatpakUninstallSuccessPkgNames[@]}"; do
+      flatpakUninstallFailedPkgNames=(
+        "${flatpakUninstallFailedPkgNames[@]/$flatpakUninstallSuccessPkgName}"
+      )
     done
 
-    if ((${#flatpakUninstallSuccessPkgNames[@]})); then
-      for flatpakUninstallSuccessPkgName in "${flatpakUninstallSuccessPkgNames[@]}"; do
-        flatpakDataDir="$HOME/.var/app/$flatpakUninstallSuccessPkgName"
-        if [[ -d "$flatpakDataDir" ]]; then
-          printWarn "App data found for $flatpakUninstallSuccessPkgName"
-          printMsg "Do you want to remove app data for '$flatpakUninstallSuccessPkgName'? (y/N): "
-          read -r ans </dev/tty
-          if [[ "$ans" =~ ^[Yy]$ ]]; then
-            echo "Deleting app data: $flatpakDataDir"
-            rm -rfv -- "$flatpakDataDir"
-            printDone "App data removed for $flatpakUninstallSuccessPkgName"
-          else
-            printMsg "App data retained for $flatpakUninstallSuccessPkgName"
-          fi
+    trap - INT
+    return 130
+  ' INT
+
+  for flatpakUninstallPkgName in "$@"; do
+    [[ -z "$flatpakUninstallPkgName" ]] && continue
+
+    printMsg "Uninstalling Package $flatpakUninstallPkgName..."
+
+    flatpak uninstall --assumeyes "$flatpakUninstallPkgName"
+    flatpakUninstallStatus=$?
+
+    if [[ $flatpakUninstallStatus -eq 0 ]]; then
+      printDone "$flatpakUninstallPkgName uninstalled successfully"
+      flatpakUninstallSuccessPkgNames+=("$flatpakUninstallPkgName")
+    else
+      printError "Failed to uninstall $flatpakUninstallPkgName"
+      flatpakUninstallFailedPkgNames+=("$flatpakUninstallPkgName")
+    fi
+  done
+
+  trap '
+    flatpakUninstallFailedAppDataPkgNames=(
+      "${flatpakUninstallSuccessPkgNames[@]}"
+    )
+
+    for flatpakUninstallProcessedAppDataPkgName in "${flatpakUninstallProcessedAppDataPkgNames[@]}"; do
+      flatpakUninstallFailedAppDataPkgNames=(
+        "${flatpakUninstallFailedAppDataPkgNames[@]/$flatpakUninstallProcessedAppDataPkgName}"
+      )
+    done
+
+    trap - INT
+    return 130
+  ' INT
+
+  for flatpakUninstallSuccessPkgName in "${flatpakUninstallSuccessPkgNames[@]}"; do
+    flatpakDataDir="$HOME/.var/app/$flatpakUninstallSuccessPkgName"
+
+    if [[ -d "$flatpakDataDir" ]]; then
+      printWarn "App data found for $flatpakUninstallSuccessPkgName"
+      printMsg "Do you want to remove app data for '$flatpakUninstallSuccessPkgName'? (y/N): "
+
+      read -r ans </dev/tty
+
+      if [[ "$ans" =~ ^[Yy]$ ]]; then
+        echo "Deleting app data: $flatpakDataDir"
+
+        rm -rfv -- "$flatpakDataDir"
+        flatpakAppDataStatus=$?
+
+        if [[ $flatpakAppDataStatus -eq 0 ]]; then
+          printDone "App data removed for $flatpakUninstallSuccessPkgName"
         else
-          printWarn "No app data found for $flatpakUninstallSuccessPkgName"
+          printError "Failed to remove app data for $flatpakUninstallSuccessPkgName"
+          flatpakUninstallFailedAppDataPkgNames+=(
+            "$flatpakUninstallSuccessPkgName"
+          )
         fi
-      done
+      else
+        printMsg "App data retained for $flatpakUninstallSuccessPkgName"
+      fi
+    else
+      printWarn "No app data found for $flatpakUninstallSuccessPkgName"
     fi
-    local cmdStatus=$?
-    trap - INT
-    ;;
-  esac
 
-  if [[ -z "$uninstallStatus" ]]; then
-    uninstallStatus="$cmdStatus"
+    flatpakUninstallProcessedAppDataPkgNames+=(
+      "$flatpakUninstallSuccessPkgName"
+    )
+  done
+
+  trap - INT
+
+  if ((${#flatpakUninstallFailedPkgNames[@]} || \
+    ${#flatpakUninstallFailedAppDataPkgNames[@]})); then
+    return 1
   fi
 
-  if [[ $uninstallStatus -eq 0 ]]; then
-    printDone "Successfully Uninstalled Packages"
-  elif [[ $uninstallStatus -eq 130 ]]; then
-    if [[ -n $flatpak_failed_uninstallStatus ]]; then
-      printError "Package Uninstall interrupted.. Failed to Uninstall ${flatpakUninstallFailedPkgNames[*]}"
-    else
-      printError "Package Uninstall interrupted"
-    fi
-  else
-    if [[ -n $flatpak_failed_uninstallStatus ]]; then
-      printError "Failed to Uninstall ${flatpakUninstallFailedPkgNames[*]}"
-    else
-      printError "Failed to Uninstall Packages"
-    fi
-  fi
+  return 0
 }
 
 whichPkgType() {
@@ -342,161 +391,343 @@ whichPkgType() {
       --header="Select package type: " \
       --preview-window=wrap \
       --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Hovered Option:";
-                        echo {}
-                    fi
-            ')
+        if [[ {} = "Back" ]]; then
+          echo "↩ Return to previous menu"
+        else
+          echo "Hovered Option:"
+          echo {}
+        fi
+      ')
+}
+
+listFlatpakInstallType() {
+  while true; do
+    flatpakInstallTypeChoices="System\nUser\nBack"
+
+    selectedflatpakInstallType=$(printf "%b" "$flatpakInstallTypeChoices" |
+      fzf --prompt="Search: " \
+        --header="Select Flatpak Install type: " \
+        --preview-window=wrap \
+        --preview '
+          if [[ {} = "Back" ]]; then
+            echo "↩ Return to previous menu"
+          else
+            echo "Hovered Option:"
+            echo {}
+          fi
+        ')
+
+    [ -z "$selectedflatpakInstallType" ] && return 1
+
+    case "$selectedflatpakInstallType" in
+    Back)
+      return 1
+      ;;
+    System | User)
+      return 0
+      ;;
+    esac
+  done
+}
+
+fzfSelectPkgs() {
+  local listCmd="$1"
+  local previewCmd="$2"
+
+  selectedPkgNames=$({
+    printf "Back\n"
+    eval "$listCmd" 2>/dev/null
+  } |
+    fzf --multi \
+      --prompt="Search Packages: " \
+      --header="Use TAB to select, ENTER to confirm." \
+      --preview-window=wrap \
+      --preview '
+        if [[ {} = "Back" ]]; then
+          echo "↩ Return to previous menu"
+        else
+          echo "Selected Packages:"
+          echo {+} | tr " " "\n"
+          echo
+          echo "Hovered Packages:"
+          echo {} | tr " " "\n"
+          echo
+          '"$previewCmd"'
+        fi
+      ')
+
+  [[ -z "$selectedPkgNames" ]] && return 1
+  [[ "$selectedPkgNames" == "Back" ]] && return 1
+
+  return 0
+}
+
+listRemotePacmanPkgs() {
+  local listRemotePkgCmd="pacman -Slq"
+
+  local fzfPreviewRemotePkgs='
+    if pacman -Qin {1} &>/dev/null; then
+      echo "*****Installed*****"
+      echo
+      pacman -Qin {1}
+    else
+      pacman -Si {1}
+    fi
+  '
+
+  fzfSelectPkgs "$listRemotePkgCmd" "$fzfPreviewRemotePkgs"
+}
+
+listRemoteAURPkgs() {
+  local listRemotePkgCmd="$aurHelper -Slqa"
+
+  local fzfPreviewRemotePkgs='
+    if '"$aurHelper"' -Qim {1} &>/dev/null; then
+      echo "*****Installed*****"
+      echo
+      '"$aurHelper"' -Qim {1} || pacman -Qim {1}
+    else
+      '"$aurHelper"' -Si {1}
+    fi
+  '
+
+  fzfSelectPkgs "$listRemotePkgCmd" "$fzfPreviewRemotePkgs"
+}
+
+listRemoteFlatpakPkgs() {
+  listFlatpakInstallType || return 1
+
+  local listRemotePkgCmd
+
+  local fzfPreviewRemotePkgs='
+    if flatpak info --system {1} &>/dev/null || flatpak info --user {1} &>/dev/null; then
+      echo "*****Installed*****"
+      echo
+      flatpak info {1}
+    else
+      flatpak remote-info --system {2} {1}/{4}/{3} 2>/dev/null ||
+        flatpak remote-info --user {2} {1}/{4}/{3} 2>/dev/null
+    fi
+  '
+
+  case "$selectedflatpakInstallType" in
+  System)
+    listRemotePkgCmd='flatpak remote-ls --system --app --columns=application,origin,branch,arch'
+    ;;
+
+  User)
+    listRemotePkgCmd='flatpak remote-ls --user --app --columns=application,origin,branch,arch'
+    ;;
+  esac
+
+  fzfSelectPkgs "$listRemotePkgCmd" "$fzfPreviewRemotePkgs"
+}
+
+listInstalledPacmanPkgs() {
+  local listInstalledPkgCmd="pacman -Qqn"
+  local fzfPreviewInstalledPkgs='pacman -Qin {1}'
+
+  fzfSelectPkgs "$listInstalledPkgCmd" "$fzfPreviewInstalledPkgs"
+}
+
+listInstalledAURPkgs() {
+  local listInstalledPkgCmd="$aurHelper -Qqm"
+  local fzfPreviewInstalledPkgs="$aurHelper -Qim {1} || pacman -Qim {1}"
+
+  fzfSelectPkgs "$listInstalledPkgCmd" "$fzfPreviewInstalledPkgs"
+}
+
+listInstalledFlatpakPkgs() {
+  listFlatpakInstallType || return 1
+
+  local listInstalledPkgCmd
+  local fzfPreviewInstalledPkgs='flatpak info {1}'
+
+  case "$selectedflatpakInstallType" in
+  System)
+    listInstalledPkgCmd="flatpak list --system --columns=application --app"
+    ;;
+
+  User)
+    listInstalledPkgCmd="flatpak --user list --columns=application --app"
+    ;;
+  esac
+
+  fzfSelectPkgs "$listInstalledPkgCmd" "$fzfPreviewInstalledPkgs"
+}
+
+listOrphanPkgs() {
+  local listCmd="pacman -Qdtq"
+  local previewCmd="pacman -Qi {1}"
+
+  fzfSelectPkgs "$listCmd" "$previewCmd" || return
+
+  selectedPkgType="Pacman"
 }
 
 listRemotePkgs() {
-  while true; do
-
     whichPkgType
 
-    [ -z "$selectedPkgType" ] && return
+    [ -z "$selectedPkgType" ] && return 1
 
     case "$selectedPkgType" in
     Pacman)
-      listRemotePkgCmd="pacman -Slq"
-      fzfPreviewRemotePkgs='
-                            if pacman -Qin {1} &>/dev/null; then
-                                echo "*****Installed*****"
-                                echo
-                                pacman -Qin {1};
-                            else
-                                pacman -Si {1};
-                            fi
-                '
+      listRemotePacmanPkgs
       ;;
+
     AUR)
-      listRemotePkgCmd="$aurHelper -Slqa"
-      fzfPreviewRemotePkgs='
-                            if '"$aurHelper"' -Qim {1} &>/dev/null; then
-                                echo "*****Installed*****"
-                                echo
-                                '"$aurHelper"' -Qim {1} || pacman -Qim {1};
-                            else
-                                '"$aurHelper"' -Si {1};
-                            fi
-                '
+      listRemoteAURPkgs
       ;;
+
     Flatpak)
-      listRemotePkgCmd="flatpak search --columns=application,remote,branch \"\""
-      fzfPreviewRemotePkgs='
-                            if flatpak info {1} &>/dev/null; then
-                                echo "*****Installed*****"
-                                echo
-                                flatpak info {1}
-                            else
-                                flatpak remote-info {2} {1}/x86_64/{3} --system 2>/dev/null || flatpak remote-info {2} {1}/x86_64/{3} --user
-                            fi
-                '
+      listRemoteFlatpakPkgs
       ;;
+
     Back)
-      return
+      return 1
       ;;
     esac
-    local selectedPkgNames
-    selectedPkgNames=$({
-      printf "Back\n"
-      {
-        eval "$listRemotePkgCmd" 2>/dev/null &
-      }
-    } |
-      fzf --multi \
-        --prompt="Search Packages: " \
-        --header="Use TAB to select, ENTER to Install." \
-        --preview-window=wrap \
-        --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Selected Packages:";
-                        echo {+} | tr " " "\n";
-                        echo;
-                        echo "Hovered Packages:";
-                        echo {} | tr " " "\n";
-                        echo;
-                        '"$fzfPreviewRemotePkgs"'
-                    fi
-        ')
-    [ -z "$selectedPkgNames" ] && continue
-    case "$selectedPkgNames" in
-    "Back")
-      continue
-      ;;
-    *)
-      mapfile -t installPkgNames <<<"$selectedPkgNames"
-      inhibitSleepStart "$0" "Prevent shutdown/sleep during package Install"
-      installListedPkgs "${installPkgNames[@]}"
-      continuePromptAnyKey
-      inhibitSleepStop
-      ;;
-    esac
-  done
 }
 
 listInstalledPkgs() {
-  while true; do
-
     whichPkgType
 
-    [ -z "$selectedPkgType" ] && return
+    [ -z "$selectedPkgType" ] && return 1
 
     case "$selectedPkgType" in
     Pacman)
-      listInstalledPkgCmd="pacman -Qqn"
-      fzfPreviewInstalledPkgs='pacman -Qin {1}'
+      listInstalledPacmanPkgs
       ;;
+
     AUR)
-      listInstalledPkgCmd="$aurHelper -Qqm"
-      fzfPreviewInstalledPkgs="$aurHelper -Qim {1} || pacman -Qim {1}"
+      listInstalledAURPkgs
       ;;
+
     Flatpak)
-      listInstalledPkgCmd="flatpak list --columns=application --app | grep -v \"Application ID\""
-      fzfPreviewInstalledPkgs='flatpak info {1}'
+      listInstalledFlatpakPkgs
       ;;
+
     Back)
-      return
+      return 1
       ;;
     esac
-    local selectedPkgNames
-    selectedPkgNames=$({
-      printf "Back\n"
-      eval "$listInstalledPkgCmd"
-    } |
-      fzf --multi \
-        --prompt="Search Packages: " \
-        --header="Use TAB to select, ENTER to Uninstall." \
-        --preview-window=wrap \
-        --preview '
-                    if [[ {} = "Back" ]]; then
-                        echo "↩ Return to previous menu"
-                    else
-                        echo "Selected Packages:";
-                        echo {+} | tr " " "\n";
-                        echo;
-                        echo "Hovered Packages:";
-                        echo {} | tr " " "\n";
-                        echo;
-                        '"$fzfPreviewInstalledPkgs"'
-                    fi
-        ')
-    [ -z "$selectedPkgNames" ] && continue
-    case "$selectedPkgNames" in
-    "Back") continue ;;
-    *)
-      mapfile -t uninstallPkgNames <<<"$selectedPkgNames"
-      inhibitSleepStart "$0" "Prevent shutdown/sleep during package Uninstall"
-      uninstallListedPkgs "${uninstallPkgNames[@]}"
-      continuePromptAnyKey
-      inhibitSleepStop
-      ;;
-    esac
-  done
+}
+
+installStatusHandler() {
+  local installStatus=$1
+
+  if [[ $installStatus -eq 0 ]]; then
+    printDone "Successfully Installed Packages"
+  elif [[ $installStatus -eq 130 ]]; then
+    printError "Package Install interrupted"
+  else
+    printError "Failed to Install Packages"
+  fi
+}
+
+uninstallStatusHandler() {
+  local uninstallStatus=$1
+
+  if [[ $uninstallStatus -eq 0 ]]; then
+    printDone "Successfully Uninstalled Packages"
+
+  elif [[ $uninstallStatus -eq 130 ]]; then
+    if ((${#flatpakUninstallFailedPkgNames[@]})); then
+      printError "Package Uninstall interrupted.. Failed to Uninstall ${flatpakUninstallFailedPkgNames[*]}"
+    elif ((${#flatpakUninstallFailedAppDataPkgNames[@]})); then
+      printError "Package Uninstall interrupted.. Failed to Delete App Data for ${flatpakUninstallFailedAppDataPkgNames[*]}"
+    else
+      printError "Package Uninstall interrupted"
+    fi
+
+  else
+    if ((${#flatpakUninstallFailedPkgNames[@]})); then
+      printError "Failed to Uninstall ${flatpakUninstallFailedPkgNames[*]}"
+    fi
+
+    if ((${#flatpakUninstallFailedAppDataPkgNames[@]})); then
+      printError "Failed to Delete App Data for ${flatpakUninstallFailedAppDataPkgNames[*]}"
+    fi
+
+    if ((${#flatpakUninstallFailedPkgNames[@]} == 0 && \
+      ${#flatpakUninstallFailedAppDataPkgNames[@]} == 0)); then
+      printError "Failed to Uninstall Packages"
+    fi
+  fi
+}
+
+installListedPkgs() {
+  local installStatus
+
+  case "$selectedPkgType" in
+  Pacman)
+    installPacmanPkgs "$@"
+    installStatus=$?
+    ;;
+
+  AUR)
+    installAURPkgs "$@"
+    installStatus=$?
+    ;;
+
+  Flatpak)
+    installFlatpakPkgs "$@"
+    installStatus=$?
+    ;;
+  esac
+
+  installStatusHandler "$installStatus"
+}
+
+uninstallListedPkgs() {
+  local uninstallStatus
+
+  case "$selectedPkgType" in
+  Pacman)
+    uninstallPacmanPkgs "$@"
+    uninstallStatus=$?
+    ;;
+
+  AUR)
+    uninstallAURPkgs "$@"
+    uninstallStatus=$?
+    ;;
+
+  Flatpak)
+    uninstallFlatpakPkgs "$@"
+    uninstallStatus=$?
+    ;;
+  esac
+
+  uninstallStatusHandler "$uninstallStatus"
+}
+
+installPkgs() {
+  local listFunc="$1"
+  local installPkgNames
+
+  "$listFunc" || return
+
+  mapfile -t installPkgNames <<<"$selectedPkgNames"
+
+  inhibitSleepStart "$0" "Prevent shutdown/sleep during package Install"
+  installListedPkgs "${installPkgNames[@]}"
+  continuePromptAnyKey
+  inhibitSleepStop
+}
+
+uninstallPkgs() {
+  local listFunc="$1"
+  local uninstallPkgNames
+
+  "$listFunc" || return
+
+  mapfile -t uninstallPkgNames <<<"$selectedPkgNames"
+
+  inhibitSleepStart "$0" "Prevent shutdown/sleep during package Uninstall"
+  uninstallListedPkgs "${uninstallPkgNames[@]}"
+  continuePromptAnyKey
+  inhibitSleepStop
 }
 
 cleanup() {
@@ -582,7 +813,7 @@ listUpdatePkgs() {
   done
 }
 
-printUpdateStatusSummary() {
+updateStatusHandler() {
   local border=false
   local summary=false
 
@@ -655,36 +886,24 @@ updateArchPkgs() {
   printMsg "Updating Arch repo packages with \"sudo pacman -Syu\"..."
   trap 'pacmanUpdateStatus=130' INT
   sudo pacman -Syu --noconfirm
-  local cmdStatus=$?
+  pacmanUpdateStatus=$?
   trap - INT
-  if [[ -z "$pacmanUpdateStatus" ]]; then
-    pacmanUpdateStatus="$cmdStatus"
-  fi
-  printUpdateStatusSummary --arch
 }
 
 updateAURPkgs() {
   printMsg "Updating AUR packages with \"$aurHelper ${aurHelperArgs[*]} -Syua\"..."
   trap 'AURUpdateStatus=130' INT
   "$aurHelper" "${aurHelperArgs[@]}" -Syua
-  local cmdStatus=$?
+  AURUpdateStatus=$?
   trap - INT
-  if [[ -z "$AURUpdateStatus" ]]; then
-    AURUpdateStatus="$cmdStatus"
-  fi
-  printUpdateStatusSummary --aur
 }
 
 updateFlatpakPkgs() {
   printMsg "Updating Flatpak packages with \"flatpak update --assumeyes\"..."
   trap 'flatpakUpdateStatus=130' INT
   flatpak update --assumeyes
-  local cmdStatus=$?
+  flatpakUpdateStatus=$?
   trap - INT
-  if [[ -z "$flatpakUpdateStatus" ]]; then
-    flatpakUpdateStatus="$cmdStatus"
-  fi
-  printUpdateStatusSummary --flatpak
 }
 
 updateAllPkgs() {
@@ -696,7 +915,6 @@ updateAllPkgs() {
   if command -v flatpak >/dev/null; then
     updateFlatpakPkgs
   fi
-  printUpdateStatusSummary --summary
 }
 
 listUpdateTypes() {
@@ -731,6 +949,7 @@ listUpdateTypes() {
     "Pacman")
       inhibitSleepStart "$0" "Prevent shutdown/sleep during system upgrade"
       updateArchPkgs
+      updateStatusHandler --arch
       unset pacmanUpdateStatus
       continuePromptAnyKey
       inhibitSleepStop
@@ -738,6 +957,7 @@ listUpdateTypes() {
     "AUR")
       inhibitSleepStart "$0" "Prevent shutdown/sleep during system upgrade"
       updateAURPkgs
+      updateStatusHandler --aur
       unset AURUpdateStatus
       continuePromptAnyKey
       inhibitSleepStop
@@ -745,6 +965,7 @@ listUpdateTypes() {
     "Flatpak")
       inhibitSleepStart "$0" "Prevent shutdown/sleep during system upgrade"
       updateFlatpakPkgs
+      updateStatusHandler --flatpak
       unset flatpakUpdateStatus
       continuePromptAnyKey
       inhibitSleepStop
@@ -752,6 +973,7 @@ listUpdateTypes() {
     "Full System Upgrade")
       inhibitSleepStart "$0" "Prevent shutdown/sleep during system upgrade"
       updateAllPkgs
+      updateStatusHandler --summary
       unset pacmanUpdateStatus AURUpdateStatus flatpakUpdateStatus
       continuePromptAnyKey
       inhibitSleepStop
@@ -782,44 +1004,6 @@ cleanPkgCache() {
   fi
   trap - INT
   continuePromptAnyKey
-}
-
-listOrphanPkgs() {
-  while true; do
-    local selectedPkgNames
-    selectedPkgNames=$({
-      printf "Back\n"
-      pacman -Qdtq
-    } |
-      fzf --multi \
-        --prompt="Search Packages: " \
-        --header="Use TAB to select, ENTER to Uninstall." \
-        --preview-window=wrap \
-        --preview '
-            if [[ {} = "Back" ]]; then
-                echo "↩ Return to previous menu"
-            else
-                echo "Selected Packages:";
-                echo {+} | tr " " "\n";
-                echo;
-                echo "Hovered Packages:";
-                echo {} | tr " " "\n";
-                echo;
-                pacman -Qi {1}
-            fi
-    ')
-    [ -z "$selectedPkgNames" ] && return
-    case "$selectedPkgNames" in
-    "Back") return ;;
-    *)
-      mapfile -t orphanPkg <<<"$selectedPkgNames"
-      inhibitSleepStart "$0" "Prevent shutdown/sleep during package Uninstall"
-      selectedPkgType="Pacman" && uninstallListedPkgs "${orphanPkg[@]}"
-      continuePromptAnyKey
-      inhibitSleepStop
-      ;;
-    esac
-  done
 }
 
 checkMissingPkgFromGroup() {
@@ -871,7 +1055,7 @@ checkMissingPkgFromGroup() {
       "Back") continue ;;
       *)
         mapfile -t missingPkgNames <<<"$selectedPkgNames"
-        inhibitSleepStart "$0" "Prevent shutdown/sleep during package Uninstall"
+        inhibitSleepStart "$0" "Prevent shutdown/sleep during package Install"
         selectedPkgType="Pacman" && installListedPkgs "${missingPkgNames[@]}"
         continuePromptAnyKey
         inhibitSleepStop
@@ -918,12 +1102,12 @@ pkgMenu() {
     )
     [ -z "$pkgManager" ] && return
     case "$pkgManager" in
-    "Install Packages") listRemotePkgs ;;
-    "Uninstall Packages") listInstalledPkgs ;;
+    "Install Packages") installPkgs listRemotePkgs ;;
+    "Uninstall Packages") uninstallPkgs listInstalledPkgs ;;
     "Check Updates") listUpdatePkgs ;;
     "Update System") listUpdateTypes ;;
     "Check Missing Package From Package Group") checkMissingPkgFromGroup ;;
-    "List Orphan Packages") listOrphanPkgs ;;
+    "List Orphan Packages") uninstallPkgs listOrphanPkgs ;;
     "Clean Package Cache") cleanPkgCache ;;
     "Generate Devel Data For AUR Helpers") generateAURDevelData ;;
     "Change AUR Helper") aurSetup --forcereset && continue ;;
