@@ -436,7 +436,7 @@ fzfSelectPkgs() {
 
   selectedPkgNames=$({
     printf "Back\n"
-    eval "$listCmd" 2>/dev/null
+    eval "$listCmd" 2>/dev/null &
   } |
     fzf --multi \
       --prompt="Search Packages: " \
