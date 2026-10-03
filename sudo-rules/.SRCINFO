@@ -4,6 +4,8 @@ pkgbase = sudo-rules
 	pkgrel = 1
 	arch = any
 	source = 10-custom
+	source = 20-papirus-folders
 	sha256sums = d2afc77d359a0fdb21aa4f57a83d0502eaa4333d03a54b0522ea4b0a8f9d703d
+	sha256sums = effaa2cc86d892196559fe10220e75c039fc95db0031e2b186ebb699d911315c
 
 pkgname = sudo-rules
