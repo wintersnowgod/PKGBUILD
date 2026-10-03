@@ -1,0 +1,17 @@
+pkgbase = plasma6-applets-plasma-podman
+	pkgdesc = Plasmoid for KDE Plasma to control docker containers
+	pkgver = 3.0
+	pkgrel = 1
+	url = https://github.com/naraesk/plasma-podman
+	arch = any
+	license = GPL-3.0-only
+	makedepends = cmake
+	makedepends = extra-cmake-modules
+	depends = plasma-workspace
+	provides = plasma6-applets-plasma-podman
+	conflicts = plasma6-applets-plasma-podman-bin
+	conflicts = plasma6-applets-plasma-podman-git
+	source = https://github.com/naraesk/plasma-podman/archive/refs/tags/v3.0.tar.gz
+	sha256sums = 23b7b5eaa8604cf888115c1c228c900cd629fa73110800c0fb3c9ca9b64ef20e
+
+pkgname = plasma6-applets-plasma-podman
